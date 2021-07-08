@@ -23,9 +23,8 @@ import csv
 from BaseSubtraction import BaseSubtraction
 
 
-
 #region MAIN SCAN LOOP
-scan_index_length = 2
+scan_index_length = 1
 scan_start = 0
 fit_var = []
 
