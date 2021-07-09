@@ -25,7 +25,7 @@ from BaseSubtraction import BaseSubtraction
 
 #region MAIN SCAN LOOP
 scan_index_length = 1
-scan_start = 0
+scan_start = 3
 fit_var = []
 
 for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan_index_length, 1)):
