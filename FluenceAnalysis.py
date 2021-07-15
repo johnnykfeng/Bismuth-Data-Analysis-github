@@ -21,13 +21,11 @@ from ScanDictionary import scanlist
 import time
 import csv
 from BaseSubtraction import BaseSubtraction
-
-#testing commit with this comment
-print("I want to commit on GitHub")
+from Bi_exponential_fit import biexp_fit
 
 #region MAIN SCAN LOOP
-scan_index_length = 1
-scan_start = 3
+scan_index_length = 3
+scan_start = 1
 fit_var = []
 
 for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan_index_length, 1)):
@@ -61,7 +59,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     show_on_img = 0
     show_off_img = 0
     show_liquid_rise = 0
-    show_expfits = 1
+    show_expfits = 0
     normalize_intensity = 1  # normalize intensity I(t)/I_t0 in expfits
     show_flattened_on_img = 1
     plot_find_peaks = 0
@@ -130,8 +128,8 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
 
     #region Control plotting and integration variables
     plotting_index = np.arange(1, len(onList))  # skip certain timepoints in the scan, such as the first
-    # peak_choices = (1, 2, 5, 6)
-    peak_choices = (1, 2, 3, 4, 5, 6, 7, 11)
+    peak_choices = (1, 2, 5, 6)
+    # peak_choices = (1, 2, 3, 4, 5, 6, 7, 11)
     peak_step = 6
     peak_sum = np.zeros((len(peak_choices), len(plotting_index), scan_index_length))  # empty array for collecting the integrated peak data
     #endregion
@@ -145,51 +143,51 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     #endregion
 
     #region FIND PEAKS_1  (not used anymore)
-    FIND_PEAKS = 0
-    start_timer = time.time()
-    if FIND_PEAKS:
-        image_index = 1  # first ON image, usually before t0
-        timepoint = os.path.basename(onList[image_index]).split('_')[3]
-        rad_avg_peakimg = findCenters.radialProfile(io.imread(onList[image_index]), center0)
-        #----------- MAIN PEAK FINDING LINE OF CODE ------------ #
-        peakposn, properties = find_peaks(rad_avg_peakimg, threshold=None, distance=20, prominence=1, width=2)
-        bases = properties['left_bases']  # finds the bases for each peak
-        bases = np.append(bases, [375,420])
-        f = interpolate.interp1d(bases, rad_avg_peakimg[bases], kind='cubic')
-
-        x_bases = np.arange(min(bases), max(bases), 1)
-        spline_bg = f(x_bases)   # spline of bases, to be subtracted as background
-        flattened_rad_avg = rad_avg_peakimg[min(bases): max(bases)]- spline_bg
-        flattened_rad_avg = flattened_rad_avg -min(flattened_rad_avg[100:])
-        peakposition, properties = find_peaks(flattened_rad_avg, threshold=None, distance=20, prominence=5, width=5)
-
-        # plot_find_peaks = 1
-        if plot_find_peaks:
-            fig, ax = plt.subplots()
-            ax.plot(rad_avg_peakimg, color=colors[-image_index], linewidth=1, linestyle='--', label= 'raw rad avg')
-            ax.plot(peakposn, rad_avg_peakimg[peakposn], "x", markersize=5, color= 'blue')
-
-            ax.plot(bases, rad_avg_peakimg[bases], 'o', color='red')   # show bases as red circle
-            ax.plot(spline_bg, label= 'fitted background')
-
-            # --- FIND PEAKS FOR THE FLATTENED RADIAL AVERAGE ----- #
-            ax.plot(flattened_rad_avg, color=colors[image_index], linewidth=2, linestyle='-', label= 'flattened rad avg ')
-            ax.plot(peakposition, flattened_rad_avg[peakposition], "x", markersize=5, color= 'green')
-            # LABEL peaks in the plots
-            for t in range(len(peakposition)):
-                peakposn_text = str(peakposition[t])+ ', ' + str(np.round(pixel2Ghkl*peakposition[t],  3)) + '$A^{-1}$ '
-                plt.text(peakposition[t] - 10, flattened_rad_avg[peakposition][t] + 300, peakposn_text)  # labels the peak positions
-                plt.text(peakposition[t], flattened_rad_avg[peakposition][t] - 50, str(t), fontweight='bold') # labels the peak index number
-
-            ax.set_xlabel('CCD pixels')
-            secax = ax.secondary_xaxis('top', functions = (pixel2scatt_vector, scatt_vector2pixel))
-            secax.set_xlabel('scattering vector (1/A)')
-            plt.legend()
-            plt.grid(True)
-            plt.title(plot_title)
-    find_peaks_runtime = time.time() - start_timer
-    print('Find Peaks Runtime = ' + str(find_peaks_runtime))
-    #endregion_1 #
+    # FIND_PEAKS = 0
+    # start_timer = time.time()
+    # if FIND_PEAKS:
+    #     image_index = 1  # first ON image, usually before t0
+    #     timepoint = os.path.basename(onList[image_index]).split('_')[3]
+    #     rad_avg_peakimg = findCenters.radialProfile(io.imread(onList[image_index]), center0)
+    #     #----------- MAIN PEAK FINDING LINE OF CODE ------------ #
+    #     peakposn, properties = find_peaks(rad_avg_peakimg, threshold=None, distance=20, prominence=1, width=2)
+    #     bases = properties['left_bases']  # finds the bases for each peak
+    #     bases = np.append(bases, [375,420])
+    #     f = interpolate.interp1d(bases, rad_avg_peakimg[bases], kind='cubic')
+    #
+    #     x_bases = np.arange(min(bases), max(bases), 1)
+    #     spline_bg = f(x_bases)   # spline of bases, to be subtracted as background
+    #     flattened_rad_avg = rad_avg_peakimg[min(bases): max(bases)]- spline_bg
+    #     flattened_rad_avg = flattened_rad_avg -min(flattened_rad_avg[100:])
+    #     peakposition, properties = find_peaks(flattened_rad_avg, threshold=None, distance=20, prominence=5, width=5)
+    #
+    #     # plot_find_peaks = 1
+    #     if plot_find_peaks:
+    #         fig, ax = plt.subplots()
+    #         ax.plot(rad_avg_peakimg, color=colors[-image_index], linewidth=1, linestyle='--', label= 'raw rad avg')
+    #         ax.plot(peakposn, rad_avg_peakimg[peakposn], "x", markersize=5, color= 'blue')
+    #
+    #         ax.plot(bases, rad_avg_peakimg[bases], 'o', color='red')   # show bases as red circle
+    #         ax.plot(spline_bg, label= 'fitted background')
+    #
+    #         # --- FIND PEAKS FOR THE FLATTENED RADIAL AVERAGE ----- #
+    #         ax.plot(flattened_rad_avg, color=colors[image_index], linewidth=2, linestyle='-', label= 'flattened rad avg ')
+    #         ax.plot(peakposition, flattened_rad_avg[peakposition], "x", markersize=5, color= 'green')
+    #         # LABEL peaks in the plots
+    #         for t in range(len(peakposition)):
+    #             peakposn_text = str(peakposition[t])+ ', ' + str(np.round(pixel2Ghkl*peakposition[t],  3)) + '$A^{-1}$ '
+    #             plt.text(peakposition[t] - 10, flattened_rad_avg[peakposition][t] + 300, peakposn_text)  # labels the peak positions
+    #             plt.text(peakposition[t], flattened_rad_avg[peakposition][t] - 50, str(t), fontweight='bold') # labels the peak index number
+    #
+    #         ax.set_xlabel('CCD pixels')
+    #         secax = ax.secondary_xaxis('top', functions = (pixel2scatt_vector, scatt_vector2pixel))
+    #         secax.set_xlabel('scattering vector (1/A)')
+    #         plt.legend()
+    #         plt.grid(True)
+    #         plt.title(plot_title)
+    # find_peaks_runtime = time.time() - start_timer
+    # print('Find Peaks Runtime = ' + str(find_peaks_runtime))
+    # #endregion_1 #
 
     #region New Peak Finding using BaseSubtraction.py
     image_index = 1  # first ON image, usually before t0
@@ -315,12 +313,58 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     print('radialprofile_runtime = ' + str(radialprofile_runtime))
     #endregion
 
+    do_biexponential_fit = 1
+    if do_biexponential_fit:
+        fitted_variables = np.zeros((len(peak_choices), 7))   # create array to collect the fitted variables
+        fig, ax1 = plt.subplots()
+        skipfirst = 0
+        skiplast = 1
+        x_peaks = t_list[skipfirst: -skiplast]  # sets the x-axis, which is the time-delay in ps
+        x_peaks = t_list  # sets the x-axis, which is the time-delay in ps
+
+        for p_index, p in enumerate(peak_choices):
+
+            y_peaks = (peak_sum[p_index, :, scan_index]) #extracts the y-peaks
+            y_peaks_t0 = sum(y_peaks[:8])/8  # takes the average of the first 8 peaks
+            y_peaks = y_peaks/y_peaks_t0
+            ax1.plot(x_peaks, y_peaks, '-o', color=peak_colors[p_index],  label = "Peak #" + str(p))
+
+            A1, A2, tau1, tau2, t0, c = -0.2, 0.1, 2, 100, 0, 1
+            x_fit, y_fit, popt, pcov = biexp_fit(x_peaks, y_peaks, A1, A2, tau1, tau2, t0, c, 'Peak ' + str(p))
+            fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3], popt[4], popt[5]
+            print(fitted_variables)
+            ax1.plot(x_fit, y_fit, '--', color = peak_colors[p_index])
+
+            #region Plot settings
+            ax1.tick_params(axis='y')
+            ax1.set_ylabel('Normalized peak intensity')
+            ax1.set_xlabel('Timepoint (ps)')
+            ax1.legend(loc='center left')
+            ax1.grid(True)
+            ax1.set_title(plot_title)
+            #endregion
+
+
+            # fluence_label = scanlist[scan_number]['fluence'] + ' $mJ/cm^2$'
+            # peakfigure = plt.figure('peak # ' + str(p))
+            # # peakfigure.set_title('Time Trace Peak # ' + str(p))
+            # plt.plot(x_peaks, y_peaks, '-o', color = colors_fluence[scan_index], label = fluence_label)
+            # # plt.plot(x_fit, y_fit, '--',color = colors_fluence[scan_index])
+            # plt.xlabel('Timepoint (ps)')
+            # plt.ylabel('Normalized peak intensity')
+            # plt.grid(True)
+            # plt.title('peak # ' + str(p))
+            # plt.legend()
+
+#--------------------------------------------------------------------------------------------------#
+    show_expfits = 0
     if show_expfits:
         fitted_variables = np.zeros((len(peak_choices), 5))
         fig, ax1 = plt.subplots()
         skipfirst = 0
         skiplast = 1
         x_peaks = t_list[skipfirst: -skiplast] #picks timepoints for the exponential fitting
+
         # Does the exponential fit for each peak
 
         for p_index, p in enumerate(peak_choices):
@@ -328,13 +372,12 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
             a, c, tau, t0 = 8000, -8000, 2.0, 0
             if p == 3 or p == 4:
                 a, c, tau, t0 = -5000, 5000, 2.0, 0
-            # elif p == 10 or p = 11:
 
             y_peaks = (peak_sum[p_index, skipfirst:-skiplast, scan_index])
             x_fit, y_fit, popt, pcov = exp_fit.mainfitting(x_peaks, y_peaks, a, c, tau, t0, 'Peak '+ str(p))
             fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3]  # stick the fitted variables here to make a table
 
-            normalize_intensity = 0
+            normalize_intensity = 1
             if normalize_intensity:
                 y_fit = np.true_divide(y_fit, popt[0]+popt[1])
                 y_peaks = np.true_divide(y_peaks, popt[0]+popt[1])
@@ -369,7 +412,6 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
             plt.legend()
 
         ravel_fitted_variables = np.ravel(fitted_variables)
-        # ravel_fitted_variables.insert(0, float(scanlist[scan_number]['fluence']))
         ravel_fitted_variables = np.insert(ravel_fitted_variables, 0, float(scanlist[scan_number]['fluence']))
         fit_var.append(ravel_fitted_variables)
 
