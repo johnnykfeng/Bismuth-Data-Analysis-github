@@ -44,7 +44,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
                        'fluence= ' + scanlist[scan_number]['fluence'] + ' $mJ/cm^2$'
     #endregion
 
-    #region Toggle Plotting Variables
+    #region Toggle Show Plots
     #region pixel2Ghkl functions
     pixel2Ghkl = 2.126e-3   # converts CCD pixels to G_hkl = 1/d_hkl 'scattering vector'
     def pixel2scatt_vector(x):
@@ -52,7 +52,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     def scatt_vector2pixel(x):
         return x/pixel2Ghkl
     #endregion
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    #----------------------------------------------------------------
     show_centerfinder = 0
     show_all_diffImg =0  # toggles diff_Img plot
     show_vertical_lines = 1  # toggles vertical integration lines in diff_Img plot
@@ -126,6 +126,18 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     print('Find Center Runtime = ' + str(find_center_runtime))
     #endregion
 
+    #region New Peak Finding using BaseSubtraction.py
+    image_index = 1  # first ON image, usually before t0
+    rad_avg_img = findCenters.radialProfile(io.imread(onList[image_index]), center0) # image
+    flattened_rad_avg, peakposition, properties, bases1, bases2, bases3, spline_bg1, spline_bg2 = BaseSubtraction(rad_avg_img, 1, 0)
+    plt.figure('Demonstrate peak and base finding, flattened_rad_avg')
+    plt.plot(flattened_rad_avg)
+    pp = peakposition[:-2]
+    plt.plot(pp, flattened_rad_avg[pp], 'x')
+    plt.plot(bases3, flattened_rad_avg[bases3], 'o')
+    plt.grid(True)
+    #endregion
+
     #region Control plotting and integration variables
     plotting_index = np.arange(1, len(onList))  # skip certain timepoints in the scan, such as the first
     peak_choices = (1, 2, 5, 6)
@@ -188,18 +200,6 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     # find_peaks_runtime = time.time() - start_timer
     # print('Find Peaks Runtime = ' + str(find_peaks_runtime))
     # #endregion_1 #
-
-    #region New Peak Finding using BaseSubtraction.py
-    image_index = 1  # first ON image, usually before t0
-    rad_avg_img = findCenters.radialProfile(io.imread(onList[image_index]), center0) # image
-    flattened_rad_avg, peakposition, properties, bases1, bases2, bases3, spline_bg1, spline_bg2 = BaseSubtraction(rad_avg_img, 1, 0)
-    plt.figure('Demonstrate peak and base finding, flattened_rad_avg')
-    plt.plot(flattened_rad_avg)
-    pp = peakposition[:-2]
-    plt.plot(pp, flattened_rad_avg[pp], 'x')
-    plt.plot(bases3, flattened_rad_avg[bases3], 'o')
-    plt.grid(True)
-    #endregion
 
     #region Main Loop for Computing and Plotting Radial Average
     start_timer = time.time()
@@ -332,7 +332,10 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
             A1, A2, tau1, tau2, t0, c = -0.2, 0.1, 2, 100, 0, 1
             x_fit, y_fit, popt, pcov = biexp_fit(x_peaks, y_peaks, A1, A2, tau1, tau2, t0, c, 'Peak ' + str(p))
             fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3], popt[4], popt[5]
-            print(fitted_variables)
+            print('scan_number:' + str(scan_number))
+            print('fitted_variables: ' + 'peak ' + str(p))
+            print(fitted_variables[p_index,:])
+
             ax1.plot(x_fit, y_fit, '--', color = peak_colors[p_index])
 
             #region Plot settings

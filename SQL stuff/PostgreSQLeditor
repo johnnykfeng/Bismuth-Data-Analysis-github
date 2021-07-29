@@ -1,0 +1,17 @@
+/*
+CREATE TABLE ScanDictionary (
+    Scan_ID SERIAL,
+    date DATE,
+    scan INT,
+    thickness FLOAT(20),
+    energy FLOAT(20),
+    beamwaist FLOAT(20),
+    fluence FLOAT(20),
+    exposure FLOAT(20)
+)  
+*/
+
+COPY ScanDictionary(scan_id,date,scan,thickness,energy,beamwaist,fluence,exposure)
+FROM 'D:\Bismuth Project\New Bismuth Data\Bismuth Scan Notes COMPLETE - Scans by fluence.csv'
+DELIMITER ','
+CSV HEADER;

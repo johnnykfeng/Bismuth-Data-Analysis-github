@@ -33,19 +33,19 @@ def biexp_fit(timedata, peakdata, a1_guess, a2_guess, tau1_guess, tau2_guess, t0
 
         return (1/2)*((A1*erf1 + A2*erf2) + (A1*exp3)*(-2 + erfc4) + (A2*exp5)* (-2 + erfc6) ) + c
 
-    def piecewise_biexp_function(x, A1, A2, tau1, tau2, t0):
-        if t < t0:
-            return A1 + A2 + c
-        else:
-            return BiExponentialIntensityDecay(x, A1, A2, tau1, tau2, t0, c)
-
-    fitfunc_vec = np.vectorize(piecewise_biexp_function)
-
-    def fitfunc_vec_self(x, A1, A2, tau1, tau2, t0):
-        y = np.zeros(x.shape)
-        for i in range(len(y)):
-            y[i]=piecewise_exp_function(x[i], A1, A2, tau1, tau2, t0, c)
-        return y
+    # def piecewise_biexp_function(x, A1, A2, tau1, tau2, t0):
+    #     if t < t0:
+    #         return A1 + A2 + c
+    #     else:
+    #         return BiExponentialIntensityDecay(x, A1, A2, tau1, tau2, t0, c)
+    #
+    # fitfunc_vec = np.vectorize(piecewise_biexp_function)
+    #
+    # def fitfunc_vec_self(x, A1, A2, tau1, tau2, t0):
+    #     y = np.zeros(x.shape)
+    #     for i in range(len(y)):
+    #         y[i]=piecewise_exp_function(x[i], A1, A2, tau1, tau2, t0, c)
+    #     return y
 
     # popt, pcov = curve_fit(fitfunc_vec_self, times, peaks, p0 =(a1_guess, a2_guess, tau1_guess, tau2_guess, t0_guess, c_guess))
 
