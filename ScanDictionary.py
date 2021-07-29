@@ -22,4 +22,5 @@ with open(filename2, 'r') as read_obj:
     dict_reader = DictReader(read_obj)
     scanlist = list(dict_reader)
 
-print(scanlist)
+if __name__ == '__main__':
+    print(scanlist)
