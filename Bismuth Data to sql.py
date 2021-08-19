@@ -21,7 +21,7 @@ import csv
 from BaseSubtraction import BaseSubtraction
 from Bi_exponential_fit import biexp_fit
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, Boolean, ARRAY, Numeric, Float
-from sqlalchemy import insert, update, select
+from sqlalchemy import insert, update, select, inspect
 
 # sqlalchemy connection to postgresql database
 engine = create_engine('postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
@@ -175,9 +175,11 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     # Using sqlalchemy to create table for storing radial average data
     connection = engine.connect()
 
-    # delete_table = Table('test', metadata)
-    # delete_table.drop(engine)
-    # print(delete_table.exists(engine))
+    delete_table = Table('test', metadata)
+    delete_table.drop(engine)
+
+    insp = inspect(engine)
+    insp.has_table(delete_table)
 
     scan_table = Table('test2', metadata,
                        Column('timepoint', Numeric()),
@@ -187,10 +189,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
                        Column('radavg_flattened', ARRAY(Float())),
                        extend_existing=True)
 
-
-    metadata.create_all(engine)
-    # engine.table_names()   # should this be printed?
-    print(scan_table.exists(engine))
+    # metadata.create_all(engine)
 
     # region Main Loop for Computing and Plotting Radial Average
     start_timer = time.time()
@@ -208,10 +207,12 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
         flattened_rad_avg_on = flattened_rad_avg_on[min(bases2):max(bases2)] - spline_bg2
         lr_data.append(sum(rad_avg_diff[lr_range[0]:lr_range[1]]))  # integrates pixels for liquid rise analysis
 
-        insert_stmt = insert(scan_table).values(timepoint=t_ps, radavg_off=rad_avg_off,
-                                                radavg_on=rad_avg_on, radavg_diff=rad_avg_diff,
-                                                radavg_flattened=flattened_rad_avg_on)
-        result_proxy = connection.execute(insert_stmt)
+
+
+        # insert_stmt = insert(scan_table).values(timepoint=t_ps, radavg_off=rad_avg_off,
+        #                                         radavg_on=rad_avg_on, radavg_diff=rad_avg_diff,
+        #                                         radavg_flattened=flattened_rad_avg_on)
+        # result_proxy = connection.execute(insert_stmt)
 
 
         if show_all_diffImg:
