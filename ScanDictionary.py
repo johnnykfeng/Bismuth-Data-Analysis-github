@@ -17,9 +17,12 @@ scan_ID	date	scan	thickness	energy	beamwaist	fluence	exposure
 '''
 
 filename2 = 'D:\\Bismuth Project\\New Bismuth Data\\Bismuth Scan Notes COMPLETE - Scans by fluence.csv'
+#filename and filename2 are copies, just in different location
+filename = 'D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\Bismuth Scan Notes COMPLETE - Scans by fluence.csv'
 
-with open(filename2, 'r') as read_obj:
-    dict_reader = DictReader(read_obj)
+with open(filename, 'r') as read_obj:
+    dict_reader = DictReade
+    r(read_obj)
     scanlist = list(dict_reader)
 
 if __name__ == '__main__':
