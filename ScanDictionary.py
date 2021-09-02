@@ -22,7 +22,6 @@ filename = 'D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\Bismuth Scan Note
 
 with open(filename, 'r') as read_obj:
     dict_reader = DictReader(read_obj)
-    r(read_obj)
     scanlist = list(dict_reader)
 
 if __name__ == '__main__':

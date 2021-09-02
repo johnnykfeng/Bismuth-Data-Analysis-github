@@ -20,19 +20,26 @@ import time
 import csv
 from BaseSubtraction import BaseSubtraction
 from Bi_exponential_fit import biexp_fit
-from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, Boolean, ARRAY, Numeric, Float
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, Boolean, \
+    ARRAY, Numeric, Float, ForeignKey, ForeignKeyConstraint
 from sqlalchemy import insert, update, select, inspect
 
 # sqlalchemy connection to postgresql database
 engine = create_engine('postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 metadata = MetaData()
+# empty variables for collecting data
+fit_var = []
+peaksum_list = []
 
 # region MAIN SCAN LOOP
-scan_index_length = 1
-scan_start = 1
-fit_var = []
+scan_start = 0   # starts at 0
+scan_index_length = 4  # pick 7 for end of 23nm data
+scan_range_step = 2
 
-for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan_index_length, 1)):
+print("Scan Range:")
+print(np.arange(scan_start, scan_start + scan_index_length, scan_range_step))
+print('============================ BEGIN CODE ===========================')
+for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan_index_length, scan_range_step)):
     print('+-+-+-+-+-+-+-+- scan index: ' + str(scan_index))
     print('+-+-+-+-+-+-+-+- scan number: ' + str(scan_number))
 
@@ -41,25 +48,22 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     dataDirec = 'D:\\Bismuth Project\\New Bismuth Data\\' + scanlist[scan_number]['date'] + '\\scans\\scan' + \
                 scanlist[scan_number]['scan']
     print('Data Directory: ' + dataDirec)
-    plot_title = 'thickness= ' + scanlist[scan_number]['thickness'] + ' $nm$,  ' + \
+    plot_title = 'scan_id=' + scanlist[scan_number]['scan_id'] + ', ' +  \
+                 'thickness= ' + scanlist[scan_number]['thickness'] + ' $nm$,  ' + \
                  'fluence= ' + scanlist[scan_number]['fluence'] + ' $mJ/cm^2$,  ' + \
                  'exposure= ' + scanlist[scan_number]['exposure'] + ' $s$'
     plot_title_short = 'thickness= ' + scanlist[scan_number]['thickness'] + ' $nm$,  ' + \
                        'fluence= ' + scanlist[scan_number]['fluence'] + ' $mJ/cm^2$'
     # endregion
 
-    # region Toggle Show Plots
+    # region Toggle Show Plots and pixel2Ghkl function
     # region pixel2Ghkl functions
     pixel2Ghkl = 2.126e-3  # converts CCD pixels to G_hkl = 1/d_hkl 'scattering vector'
 
-
     def pixel2scatt_vector(x):
         return x * pixel2Ghkl
-
-
     def scatt_vector2pixel(x):
         return x / pixel2Ghkl
-
 
     # endregion
     # ----------------------------------------------------------------
@@ -106,11 +110,11 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
             onList.append(file)
         if (os.path.basename(file).split('_')[5] == 'Off'):
             offList.append(file)
-    print('loading on and off images successful')
+    # print('loading on and off images successful')
     try:
         darkBg = io.imread(os.path.join(dataDirec, 'darkExp.TIF'))
         scatterBg = io.imread(os.path.join(dataDirec, 'pumpExp.TIF'))
-        print('reading darkBg and scatterBg successful')
+        # print('reading darkBg and scatterBg successful')
     except:
         print('dark images not okay!')
     print('Number of data points: ' + str(len(onList)))
@@ -144,11 +148,14 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     flattened_rad_avg, peakposition, properties, bases1, bases2, bases3, spline_bg1, spline_bg2 = BaseSubtraction(
         rad_avg_img, 1, 0)
     plt.figure('Demonstrate peak and base finding, flattened_rad_avg')
-    plt.plot(flattened_rad_avg)
+    plt.plot(flattened_rad_avg, label = scanlist[scan_number]['fluence'])
     pp = peakposition[:-2]
-    plt.plot(pp, flattened_rad_avg[pp], 'x')
-    plt.plot(bases3, flattened_rad_avg[bases3], 'o')
+    plt.plot(pp, flattened_rad_avg[pp], 'x')   # x marks the peaks
+    plt.plot(bases3, flattened_rad_avg[bases3], 'o') # o marks the bases
+    plt.legend()
     plt.grid(True)
+    if scan_index == 0:
+        initial_peakposition = peakposition
     # endregion
 
     # region Control plotting and integration variables
@@ -157,11 +164,10 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     plotting_index = np.arange(1, len(onList))
     # plotting_index = np.arange(1, 20, 2)
 
-    peak_choices = (1, 2, 5, 6)
-    # peak_choices = (1, 2, 3, 4, 5, 6, 7, 11)
+    # peak_choices = (1, 2, 5, 6)
+    peak_choices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14,15)
     peak_step = 6
-    peak_sum = np.zeros((len(peak_choices), len(plotting_index),
-                         scan_index_length))  # empty array for collecting the integrated peak data
+    peak_sum = np.zeros((len(peak_choices), len(plotting_index))) # empty array for collecting the integrated peak data
     # endregion
 
     # region Plotting colors and fonts
@@ -172,24 +178,53 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     fontP.set_size('x-small')
     # endregion
 
-    # Using sqlalchemy to create table for storing radial average data
-    connection = engine.connect()
+    doing_sql_thing = False
+    # doing_sql_thing = True
 
-    delete_table = Table('test', metadata)
-    delete_table.drop(engine)
+    #region CREATE TABLE in SQL
+    if doing_sql_thing:
+        # table_name = 'scan' + scanlist[scan_number]['scan_id'] + '_' + \
+        #              scanlist[scan_number]['thickness'] + 'nm'
+        table_name = 'Big_Scan_' + scanlist[scan_number]['thickness'] + 'nm'
+        print('table_name: '+ table_name)
 
-    insp = inspect(engine)
-    insp.has_table(delete_table)
+        connection = engine.connect()
 
-    scan_table = Table('test2', metadata,
-                       Column('timepoint', Numeric()),
-                       Column('radavg_off', ARRAY(Float())),
-                       Column('radavg_on', ARRAY(Float())),
-                       Column('radavg_diff', ARRAY(Float())),
-                       Column('radavg_flattened', ARRAY(Float())),
-                       extend_existing=True)
+        scandict = Table('scandictionary', metadata, autoload=True, autoload_with=engine, extend_existing=True)
+        # scan_table = Table(table_name, metadata,
+        #                    Column('timepoint', Numeric()),
+        #                    Column('scan_key', Integer, ForeignKey("scandictionary.scan_id")),
+        #                    Column('radavg_off', ARRAY(Float())),
+        #                    Column('radavg_on', ARRAY(Float())),
+        #                    Column('radavg_diff', ARRAY(Float())),
+        #                    Column('radavg_flattened', ARRAY(Float())),
+        #                    Column('center', ARRAY(Float())),
+        #                    extend_existing=True)
 
-    # metadata.create_all(engine)
+        peaksum_table = Table('Peak_sum', metadata,
+                              Column('scan_pk', Integer, primary_key=True),
+                              Column('timepoint', Numeric(), primary_key=True ),
+                              Column('scan_id', Integer, ForeignKey("scandictionary.scan_id")),
+                              Column('peak1', Float()),
+                              Column('peak2', Float()),
+                              Column('peak3', Float()),
+                              Column('peak4', Float()),
+                              Column('peak5', Float()),
+                              Column('peak6', Float()),
+                              Column('peak7', Float()),
+                              Column('peak8', Float()),
+                              Column('peak9', Float()),
+                              Column('peak10', Float()),
+                              Column('peak11', Float()),
+                              Column('peak12', Float()),
+                              Column('peak13', Float()),
+                              Column('peak14', Float()),
+                              Column('peak15', Float()),
+                              extend_existing=True)
+
+
+        metadata.create_all(engine)
+    #endregion
 
     # region Main Loop for Computing and Plotting Radial Average
     start_timer = time.time()
@@ -207,14 +242,18 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
         flattened_rad_avg_on = flattened_rad_avg_on[min(bases2):max(bases2)] - spline_bg2
         lr_data.append(sum(rad_avg_diff[lr_range[0]:lr_range[1]]))  # integrates pixels for liquid rise analysis
 
+        #region INSERTING VALUES in SQL
+        # if doing_sql_thing:
+            # insert_stmt = insert(scan_table).values(timepoint=t_ps, scan_key=scanlist[scan_number]['scan_id'],
+            #                                         radavg_off=rad_avg_off,
+            #                                         radavg_on=rad_avg_on, radavg_diff=rad_avg_diff,
+            #                                         radavg_flattened=flattened_rad_avg_on,
+            #                                         center = center0
+            #                                         )
+            # result_proxy = connection.execute(insert_stmt)
+        #endregion
 
-
-        # insert_stmt = insert(scan_table).values(timepoint=t_ps, radavg_off=rad_avg_off,
-        #                                         radavg_on=rad_avg_on, radavg_diff=rad_avg_diff,
-        #                                         radavg_flattened=flattened_rad_avg_on)
-        # result_proxy = connection.execute(insert_stmt)
-
-
+        #region PLOTTING SCRIPT
         if show_all_diffImg:
             plt.figure(
                 '[diffImg] ' + 'fluence:' + scanlist[scan_number]['fluence'] + ', thickness:' + scanlist[scan_number][
@@ -284,7 +323,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
             plt.figure(
                 'fluence:' + scanlist[scan_number]['fluence'] + ', thickness:' + scanlist[scan_number]['thickness'])
 
-            if i % 2 == 1:
+            if i % 2 == 1:  # dashed line on every other timepoint for visual clarity
                 # axs[scan_index].plot(flattened_rad_avg_on , color=colors[i], linewidth=2, linestyle='-', label=str(t_ps) + 'ps ')
                 plt.plot(flattened_rad_avg_on, color=colors[i], linewidth=2, linestyle='-', label=str(t_ps) + 'ps ')
             else:
@@ -292,29 +331,62 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
                 plt.plot(flattened_rad_avg_on, color=colors[i], linewidth=2, linestyle='--', label=str(t_ps) + 'ps ')
 
             if show_vertical_lines:
+                # for p in peak_choices[:11]:
                 for p in peak_choices:
-                    plt.axvline(x=(peakposition[p] - peak_step), linestyle='--')
-                    plt.axvline(x=(peakposition[p] + peak_step), linestyle='--')
-                # LABEL peaks in the plots
-            for t in range(len(peakposition)):
-                peakposn_text = str(peakposition[t])
-                plt.text(peakposition[t], flattened_rad_avg[peakposition][t] - 50, str(t),
-                         fontweight='bold')  # labels the peak index number
+                    plt.axvline(x=(initial_peakposition[p] - peak_step), linestyle='--')
+                    plt.axvline(x=(initial_peakposition[p] + peak_step), linestyle='--')
+                    peakposn_text = str(initial_peakposition[p])
+                    plt.text(initial_peakposition[p], flattened_rad_avg[initial_peakposition[p]] - 50, str(p),
+                             fontweight='bold')
+
+                    # LABEL peaks in the plots
+            # for t in range(len(initial_peakposition)):
+            #     peakposn_text = str(initial_peakposition[t])
+            #     plt.text(initial_peakposition[t], flattened_rad_avg[initial_peakposition][t] - 50, str(t),
+            #              fontweight='bold')  # labels the peak index number
 
             plt.legend(title='timepoints', bbox_to_anchor=(1, 1), loc='upper left', prop=fontP)
-            plt.xlim(100, 400)
+            plt.xlim(100, 600)
             plt.ylim(-500, 8500)
             plt.title(plot_title)
             plt.xlabel('Radius from center (pixel)')
             plt.ylabel('Radial average difference intensity')
             plt.grid(True)
+        #endregion
 
-        # Integrates the peaks in the radial average and accumulates them in the 'peak_sum' array
-
-    for time_index in plotting_index:
+        # OLD CODE for PEAK_SUM
         for p_index, p in enumerate(peak_choices):
-            peak_sum[p_index, time_index - 1, scan_index] = sum(
-                flattened_rad_avg_on[peakposition[p] - peak_step: peakposition[p] + peak_step])
+            # print(p_index, i-1, scan_number)
+            peak_sum[p_index, i-1] = sum(flattened_rad_avg_on[initial_peakposition[p]-peak_step: initial_peakposition[p]+peak_step])
+
+        if doing_sql_thing:
+            insert_stmt = insert(peaksum_table).values(timepoint=t_ps, scan_pk=scanlist[scan_number]['scan_id'],
+                                                       scan_id=scanlist[scan_number]['scan_id'],
+                                                       peak1=peak_sum[0, i - 1],
+                                                       peak2=peak_sum[1, i - 1],
+                                                       peak3=peak_sum[2, i - 1],
+                                                       peak4=peak_sum[3, i - 1],
+                                                       peak5=peak_sum[4, i - 1],
+                                                       peak6=peak_sum[5, i - 1],
+                                                       peak7=peak_sum[6, i - 1],
+                                                       peak8=peak_sum[7, i - 1],
+                                                       peak9=peak_sum[8, i - 1],
+                                                       peak10=peak_sum[9, i - 1],
+                                                       peak11=peak_sum[10, i - 1],
+                                                       peak12=peak_sum[11, i - 1],
+                                                       peak13=peak_sum[12, i - 1],
+                                                       peak14=peak_sum[13, i - 1],
+                                                       peak15=peak_sum[14, i - 1]
+                                                    )
+            result_proxy = connection.execute(insert_stmt)
+
+    #region COMPUTING PEAK_SUM #
+    # for time_index in plotting_index:
+    #     for p_index, p in enumerate(peak_choices):
+    #         # I use time_index-1 because plotting_index starts at 1 instead of 0
+    #         peak_sum[p_index, time_index - 1, scan_index] = sum(
+    #                             flattened_rad_avg_on[initial_peakposition[p] - peak_step: initial_peakposition[p] + peak_step])
+    # #endregion
 
     radialprofile_runtime = time.time() - start_timer
     print('radialprofile_runtime = ' + str(radialprofile_runtime))

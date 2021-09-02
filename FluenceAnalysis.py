@@ -347,7 +347,6 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
             ax1.set_title(plot_title)
             #endregion
 
-
             # fluence_label = scanlist[scan_number]['fluence'] + ' $mJ/cm^2$'
             # peakfigure = plt.figure('peak # ' + str(p))
             # # peakfigure.set_title('Time Trace Peak # ' + str(p))
