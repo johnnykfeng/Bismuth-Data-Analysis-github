@@ -43,8 +43,6 @@ for scan_index in np.arange(1,4,1):  # loop over scans
     print('scan_index: ' + str(scan_index))
     fig1, ax1 = plt.subplots()
     # fig1.suptitle('scan_id: ' + str(scan_index))
-
-
     # peak_choice = 5, 6
 
     for peak_index in peak_choice:  # loop over peaks

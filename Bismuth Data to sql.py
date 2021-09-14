@@ -32,9 +32,9 @@ fit_var = []
 peaksum_list = []
 
 # region MAIN SCAN LOOP
-scan_start = 0   # starts at 0
-scan_index_length = 4  # pick 7 for end of 23nm data
-scan_range_step = 2
+scan_start = 7   # starts at 0, start at 7 for 14nm data
+scan_index_length = 5  # pick 7 for end of 23nm data, 5 for only 14nm data
+scan_range_step = 1
 
 print("Scan Range:")
 print(np.arange(scan_start, scan_start + scan_index_length, scan_range_step))
@@ -147,6 +147,9 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     rad_avg_img = findCenters.radialProfile(io.imread(onList[image_index]), center0)  # image
     flattened_rad_avg, peakposition, properties, bases1, bases2, bases3, spline_bg1, spline_bg2 = BaseSubtraction(
         rad_avg_img, 1, 0)
+    # peakposition.pop(0)  # only do this for 14nm thick data
+    if scan_number > 6:
+        peakposition = peakposition[1:]
     plt.figure('Demonstrate peak and base finding, flattened_rad_avg')
     plt.plot(flattened_rad_avg, label = scanlist[scan_number]['fluence'])
     pp = peakposition[:-2]
@@ -166,7 +169,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
 
     # peak_choices = (1, 2, 5, 6)
     peak_choices = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,14,15)
-    peak_step = 6
+    peak_step = 8
     peak_sum = np.zeros((len(peak_choices), len(plotting_index))) # empty array for collecting the integrated peak data
     # endregion
 
@@ -178,30 +181,29 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
     fontP.set_size('x-small')
     # endregion
 
-    doing_sql_thing = False
-    # doing_sql_thing = True
+    doing_sql_thing = True
 
     #region CREATE TABLE in SQL
     if doing_sql_thing:
+        connection = engine.connect()
         # table_name = 'scan' + scanlist[scan_number]['scan_id'] + '_' + \
         #              scanlist[scan_number]['thickness'] + 'nm'
         table_name = 'Big_Scan_' + scanlist[scan_number]['thickness'] + 'nm'
         print('table_name: '+ table_name)
 
-        connection = engine.connect()
 
         scandict = Table('scandictionary', metadata, autoload=True, autoload_with=engine, extend_existing=True)
-        # scan_table = Table(table_name, metadata,
-        #                    Column('timepoint', Numeric()),
-        #                    Column('scan_key', Integer, ForeignKey("scandictionary.scan_id")),
-        #                    Column('radavg_off', ARRAY(Float())),
-        #                    Column('radavg_on', ARRAY(Float())),
-        #                    Column('radavg_diff', ARRAY(Float())),
-        #                    Column('radavg_flattened', ARRAY(Float())),
-        #                    Column('center', ARRAY(Float())),
-        #                    extend_existing=True)
+        scan_table = Table(table_name, metadata,
+                           Column('timepoint', Numeric()),
+                           Column('scan_key', Integer, ForeignKey("scandictionary.scan_id")),
+                           Column('radavg_off', ARRAY(Float())),
+                           Column('radavg_on', ARRAY(Float())),
+                           Column('radavg_diff', ARRAY(Float())),
+                           Column('radavg_flattened', ARRAY(Float())),
+                           Column('center', ARRAY(Float())),
+                           extend_existing=True)
 
-        peaksum_table = Table('Peak_sum', metadata,
+        peaksum_table = Table('Peak_sum_14nm_fixed', metadata,
                               Column('scan_pk', Integer, primary_key=True),
                               Column('timepoint', Numeric(), primary_key=True ),
                               Column('scan_id', Integer, ForeignKey("scandictionary.scan_id")),
@@ -221,7 +223,6 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
                               Column('peak14', Float()),
                               Column('peak15', Float()),
                               extend_existing=True)
-
 
         metadata.create_all(engine)
     #endregion
@@ -243,14 +244,14 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
         lr_data.append(sum(rad_avg_diff[lr_range[0]:lr_range[1]]))  # integrates pixels for liquid rise analysis
 
         #region INSERTING VALUES in SQL
-        # if doing_sql_thing:
-            # insert_stmt = insert(scan_table).values(timepoint=t_ps, scan_key=scanlist[scan_number]['scan_id'],
-            #                                         radavg_off=rad_avg_off,
-            #                                         radavg_on=rad_avg_on, radavg_diff=rad_avg_diff,
-            #                                         radavg_flattened=flattened_rad_avg_on,
-            #                                         center = center0
-            #                                         )
-            # result_proxy = connection.execute(insert_stmt)
+        if doing_sql_thing:
+            insert_stmt = insert(scan_table).values(timepoint=t_ps, scan_key=scanlist[scan_number]['scan_id'],
+                                                    radavg_off=rad_avg_off,
+                                                    radavg_on=rad_avg_on, radavg_diff=rad_avg_diff,
+                                                    radavg_flattened=flattened_rad_avg_on,
+                                                    center = center0
+                                                    )
+            result_proxy = connection.execute(insert_stmt)
         #endregion
 
         #region PLOTTING SCRIPT
@@ -336,8 +337,14 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
                     plt.axvline(x=(initial_peakposition[p] - peak_step), linestyle='--')
                     plt.axvline(x=(initial_peakposition[p] + peak_step), linestyle='--')
                     peakposn_text = str(initial_peakposition[p])
-                    plt.text(initial_peakposition[p], flattened_rad_avg[initial_peakposition[p]] - 50, str(p),
-                             fontweight='bold')
+                    plt.text(initial_peakposition[p], flattened_rad_avg[initial_peakposition[p]] - 50, str(p), fontweight='bold')
+
+                    # change from initial_peakposition to peakposition, use adjusted values instead of fixed
+                    # plt.axvline(x=(peakposition[p] - peak_step), linestyle='--')
+                    # plt.axvline(x=(peakposition[p] + peak_step), linestyle='--')
+                    # peakposn_text = str(peakposition[p])
+                    # plt.text(peakposition[p], flattened_rad_avg[peakposition[p]] - 50, str(p), fontweight='bold')
+
 
                     # LABEL peaks in the plots
             # for t in range(len(initial_peakposition)):
@@ -358,6 +365,7 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
         for p_index, p in enumerate(peak_choices):
             # print(p_index, i-1, scan_number)
             peak_sum[p_index, i-1] = sum(flattened_rad_avg_on[initial_peakposition[p]-peak_step: initial_peakposition[p]+peak_step])
+            # peak_sum[p_index, i-1] = sum(flattened_rad_avg_on[peakposition[p]-peak_step: peakposition[p]+peak_step])
 
         if doing_sql_thing:
             insert_stmt = insert(peaksum_table).values(timepoint=t_ps, scan_pk=scanlist[scan_number]['scan_id'],
