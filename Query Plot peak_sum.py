@@ -48,9 +48,9 @@ for scan_index in np.arange(1,4,1):  # loop over scans
     for peak_index in peak_choice:  # loop over peaks
         print('peak_index: ' + str(peak_index))
         # extract the data I want from the dataframe
-        scandf = peak_sum_df.loc[[scan_index]]
+        scandf = peak_sum_df.loc[[scan_index]] # partition a block of the dataframe to scandf
         tp = scandf['timepoint']   # x-data
-        peak = scandf[cols[peak_index]]
+        peak = scandf[cols[peak_index]]  # get raw peak intensity
         peak_norm = peak/np.mean(peak[:7]) # y-data
 
         pltlabel = 'scan'+str(scan_index)+'-'+cols[peak_index]
@@ -118,7 +118,7 @@ if using_sql:
 
         for peak_select in np.arange(0,10):
 
-            stmt = select(col[peak_select]).select_from(peaksum.join(scandict))
+            stmt = select(col[peak_select]).select_from(peaksum.join(scandict)) # how does this join work?
             stmt = stmt.where(scandict.c.scan_id == str(scan_select))
             peak = connection.execute(stmt).fetchall()
             peak_num_list.append(peak)

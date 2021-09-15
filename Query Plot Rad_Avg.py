@@ -12,6 +12,7 @@ import csv
 from ScanDictionary import scanlist
 from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, Boolean, \
     ARRAY, Numeric, Float, ForeignKey, ForeignKeyConstraint, column
+
 from sqlalchemy import insert, update, select, inspect
 
 # csv_direc = 'D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\Big_Scan_14nm.csv'
@@ -27,30 +28,42 @@ from sqlalchemy import insert, update, select, inspect
 # plt.plot(np.array(radavg_flattened))
 # plt.show()
 
-using_sql = 1
-if using_sql:
-    # sqlalchemy connection to postgresql database
-    engine = create_engine('postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
-    metadata = MetaData()
-    connection = engine.connect()
 
-    scandict = Table('scandictionary', metadata, autoload=True, autoload_with=engine, extend_existing=True)
-    bigscan14nm = Table('Big_Scan_14nm', metadata, autoload=True, autoload_with=engine, extend_existing=True)
 
-    peak_scan_list = []
-    timepoint_list = []
+# sqlalchemy connection to postgresql database
+engine = create_engine('postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+metadata = MetaData()
+connection = engine.connect()
 
-    col = [bigscan14nm.c.radavg_flattened]
+scandict = Table('scandictionary', metadata, autoload=True, autoload_with=engine, extend_existing=True)
+bigscan14nm = Table('Big_Scan_14nm', metadata, autoload=True, autoload_with=engine, extend_existing=True)
 
-    stmt = select(col)
-    stmt = stmt.where(bigscan14nm.c.scan_key == 11)
-    result = connection.execute(stmt).fetchall()
+bigscan14nm_df = pd.read_sql_table('Big_Scan_14nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 
-plt.figure()
+# for scan_index in np.arange(8, 10, 1):  # loop over scans
+# scandf = bigscan14nm_df.loc[[9]]
+scandf = bigscan14nm_df[bigscan14nm_df['scan_key'].isin([9])]
+tp = scandf['timepoint']
+radavgflat = scandf['radavg_flattened']
 
-for i in np.arange(0,20,5):
-    y = result[i][0]
-    x = range(len(y))
 
-    plt.plot(y)
-plt.show()
+# col = [bigscan14nm.c.timepoint, bigscan14nm.c.radavg_flattened]
+# stmt = select(col)
+# stmt = stmt.where(bigscan14nm.c.scan_key == 11)
+# resulti = connection.execute(stmt)
+
+
+plotstuff = 0
+if plotstuff:
+    print('start plotting')
+    plt.figure()
+
+    # Only can call the columns values with this for loop
+    for r in resulti:
+        print(r.timepoint)
+        y = r.radavg_flattened
+        plt.plot(y,label= str(r.timepoint))
+
+    plt.grid(True)
+    plt.legend()
+    plt.show()
