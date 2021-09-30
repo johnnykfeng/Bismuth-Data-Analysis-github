@@ -7,7 +7,6 @@ from scipy.optimize import curve_fit
 
 # Kam's code
 
-
 def BiExponentialIntensityDecay(x, A1, A2, tau1, tau2, t0, c):
     sigma = 0.3  # instrument response function ?
 
@@ -23,7 +22,6 @@ def BiExponentialIntensityDecay(x, A1, A2, tau1, tau2, t0, c):
 def biexp_fit(timedata, peakdata, a1_guess, a2_guess, tau1_guess, tau2_guess, t0_guess, c_guess, plotlabel):
     times = np.array(timedata)   # convert whatever into array
     peaks = np.array(peakdata)
-
 
     def BiExponentialIntensityDecay(x, A1, A2, tau1, tau2, t0, c):
         sigma = 0.3  # instrument response function ?
@@ -66,7 +64,7 @@ def biexp_fit(timedata, peakdata, a1_guess, a2_guess, tau1_guess, tau2_guess, t0
 
     popt, pcov = curve_fit(BiExponentialIntensityDecay, times, peaks,
                            p0=(a1_guess, a2_guess, tau1_guess, tau2_guess, t0_guess, c_guess),
-                           bounds=([-100., -100., 0, 0, -20., 0.9], [100., 100., 10., 1000., 20., 1.1]))
+                           bounds=([-100., -100., 0, 50, -20., 0.9], [100., 100., 10., 200., 20., 1.1]))
 
     # popt, pcov = curve_fit(BiExponentialIntensityDecay, times, peaks,
     #                        p0 =(a1_guess, a2_guess, tau1_guess, tau2_guess, t0_guess, c_guess),

@@ -345,7 +345,6 @@ for scan_index, scan_number in enumerate(np.arange(scan_start, scan_start + scan
                     # peakposn_text = str(peakposition[p])
                     # plt.text(peakposition[p], flattened_rad_avg[peakposition[p]] - 50, str(p), fontweight='bold')
 
-
                     # LABEL peaks in the plots
             # for t in range(len(initial_peakposition)):
             #     peakposn_text = str(initial_peakposition[t])

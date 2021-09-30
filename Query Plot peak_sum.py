@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import matplotlib.cm as cm
 from scipy.signal import find_peaks
 from scipy import interpolate
 from matplotlib.font_manager import FontProperties
@@ -16,31 +15,34 @@ from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, 
     ARRAY, Numeric, Float, ForeignKey, ForeignKeyConstraint, column
 from sqlalchemy import insert, update, select, inspect
 
+# sqlalchemy connection to postgresql database
+engine = create_engine('postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+metadata = MetaData()
+connection = engine.connect()
+
+# Call and convert sql to pandas dataframe
+scandict_df = pd.read_sql_table('scandictionary', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+liquidrise_23nm_df = pd.read_sql_table('liquidrise_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+liquidrise_14nm_df = pd.read_sql_table('liquidrise_14nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+peaksum_23nm_df = pd.read_sql_table('Peak_sum_23nm_adjusted', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+peaksum_14nm_df = pd.read_sql_table('Peak_sum_14nm_fixed', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+
 csv_direc = 'D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\peak_sum_sql_export.csv'
-peak_sum_df = pd.read_csv(csv_direc, index_col=[0])
-
-# scan_index = 5
-# scan1 = peak_sum_df.loc[[1]]
-# scan2 = peak_sum_df.loc[[2]]
-# scan3 = peak_sum_df.loc[[3]]
-# scan4 = peak_sum_df.loc[[4]]
-# scan5 = peak_sum_df.loc[[5]]
-# scan6 = peak_sum_df.loc[[6]]
-# scan7 = peak_sum_df.loc[[7]]
-
-# scan_df = scan1, scan2, scan3, scan4, scan5, scan6, scan7
+# peak_sum_df = pd.read_csv(csv_direc, index_col=[0])
+peak_sum_df = peaksum_23nm_df
 
 cols =['peak1','peak2','peak3','peak4','peak5','peak6','peak7',
 'peak8','peak9','peak10','peak11','peak12','peak13','peak14','peak15']
 
-exp_fit_df = pd.DataFrame(columns = ['scan_id', 'peak_id','a', 'tau', 't0', 'c'])
+# create Data Frame for the fitted parameters
+exp_fit_df = pd.DataFrame(columns = ['scan_id', 'peak_id', 'a', 'tau', 't0', 'c'])
 biexp_fit_df = pd.DataFrame(columns = ['scan_id', 'peak_id', 'a1', 'a2', 'tau1', 'tau2', 't0', 'c'])
 
 peak_choice = 0, 1, 2, 3, 4, 5, 6
 peak_colors = cm.turbo(np.linspace(0, 1, len(peak_choice)))
 
 for scan_index in np.arange(1,4,1):  # loop over scans
-    print('scan_index: ' + str(scan_index))
+    print('++++++++ scan_index: ' + str(scan_index))
     fig1, ax1 = plt.subplots()
     # fig1.suptitle('scan_id: ' + str(scan_index))
     # peak_choice = 5, 6
@@ -48,7 +50,7 @@ for scan_index in np.arange(1,4,1):  # loop over scans
     for peak_index in peak_choice:  # loop over peaks
         print('peak_index: ' + str(peak_index))
         # extract the data I want from the dataframe
-        scandf = peak_sum_df.loc[[scan_index]] # partition a block of the dataframe to scandf
+        scandf = peak_sum_df[peak_sum_df['scan_id'] == scan_index] # partition a block of the dataframe to scandf
         tp = scandf['timepoint']   # x-data
         peak = scandf[cols[peak_index]]  # get raw peak intensity
         peak_norm = peak/np.mean(peak[:7]) # y-data
