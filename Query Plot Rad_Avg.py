@@ -15,7 +15,6 @@ from sqlalchemy import create_engine, MetaData, Table, Column, String, Integer, 
     ARRAY, Numeric, Float, ForeignKey, ForeignKeyConstraint, column
 from sqlalchemy import insert, update, select, inspect
 
-
 # sqlalchemy connection to postgresql database
 engine = create_engine('postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 metadata = MetaData()
@@ -31,19 +30,22 @@ bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodap
 peak_choices = 1,2,3,4,5,6,7
 
 sum_range = 6
-#scan_loop_arange = np.arange(8, 13, 1) # for 14nm scan
-scan_loop_arange = np.arange(1,8,1) # for 23nm scan
-# print(len(scan_loop_arange))
-liquid_rise_list = [None] * len(scan_loop_arange)
 
-# list of column names for he
+# list of column names for liquid_rise
 dict_columns = ['scan_pk', 'timepoint', 'base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
 
 lr_dict = []
 
-for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+# scan_loop_arange = np.arange(8, 13, 1) # for 14nm scan
+scan_loop_arange = np.arange(1,8,1) # for 23nm scan
+# print(len(scan_loop_arange))
+liquid_rise_list = [None] * len(scan_loop_arange)
 
-    plt.figure('scankey: ' + str(scankey))
+for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+    fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values
+    fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
+    plt.figure(fig_str_label)
+    plt.title(fig_str_label)
     # scandf = bigscan14nm_df[bigscan14nm_df['scan_key'].isin([scankey])] # filters for scankey, partition the df
     scandf = bigscan23nm_df[bigscan23nm_df['scan_key'].isin([scankey])] # filters for scankey, partition the df
     tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
@@ -65,11 +67,11 @@ for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
             plt.plot(bases, radavgflat_plot[bases], 'o')  # mark the bases with o
 
             for pc in peak_choices:
-                plt.axvline(x=(bases[pc] - sum_range), linestyle = '--')
-                plt.axvline(x=(bases[pc] + sum_range), linestyle = '--')
+                plt.axvline(x=(bases[pc] - sum_range), linestyle='--')
+                plt.axvline(x=(bases[pc] + sum_range), linestyle='--')
 
         for p_index, p in enumerate(peak_choices):
-            liquid_rise[p_index, j] = sum(radavgflat_plot[bases[p] - sum_range : bases[p]+ sum_range])
+            liquid_rise[p_index, j] = sum(radavgflat_plot[bases[p] - sum_range: bases[p]+sum_range])
 
         #region Organize the liquid rise data into dictionary
         liquid_rise_list[scanindex]= liquid_rise
@@ -90,26 +92,26 @@ liquidrise_DF = pd.DataFrame(lr_dict, columns = dict_columns)
 # exports liquidrise_DF to PostgreSQL
 #liquidrise_DF.to_sql('liquidrise_14nm', con=engine)
 
-# liquid_rise_list[scanindex][peakchoice, timepoint]
-base_columns = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
-colors = cm.jet(np.linspace(0, 1, len(base_columns)))  # colormap for plotting
+plot_liquidrise=0
+if plot_liquidrise:
+    base_columns = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
+    colors = cm.jet(np.linspace(0, 1, len(base_columns)))  # colormap for plotting
 
-# plotting the Liquid Rise from the data frame
-for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
-    # scandf = liquidrise_DF[liquidrise_DF['scan_key'].isin([scankey])
+    # plotting the Liquid Rise from the data frame
+    for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+        # scandf = liquidrise_DF[liquidrise_DF['scan_key'].isin([scankey])
 
-    plt.figure('LR scankey: ' + str(scankey))
+        plt.figure('LR scankey: ' + str(scankey))
 
-    for b_index, base_col in enumerate(base_columns):
-        x = liquidrise_DF[liquidrise_DF['scan_pk'] == scankey]['timepoint']
-        y = liquidrise_DF[liquidrise_DF['scan_pk'] == scankey][base_col]
+        for b_index, base_col in enumerate(base_columns):
+            x = liquidrise_DF[liquidrise_DF['scan_pk'] == scankey]['timepoint']
+            y = liquidrise_DF[liquidrise_DF['scan_pk'] == scankey][base_col]
 
-        y_norm = y- np.mean(y.iloc[0:5])
-        plt.plot(x, y_norm, label= base_col, color = colors[b_index], marker='o')
+            y_norm = y- np.mean(y.iloc[0:5])
+            plt.plot(x, y_norm, label=base_col, color=colors[b_index], marker='o')
 
+        plt.grid(True)
+        plt.legend()
 
-    plt.grid(True)
-    plt.legend()
-
-plt.show()
+    plt.show()
 

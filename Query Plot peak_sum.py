@@ -28,20 +28,22 @@ peaksum_23nm_df = pd.read_sql_table('Peak_sum_23nm_adjusted', 'postgresql://post
 peaksum_14nm_df = pd.read_sql_table('Peak_sum_14nm_fixed', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 
 csv_direc = 'D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\peak_sum_sql_export.csv'
-# peak_sum_df = pd.read_csv(csv_direc, index_col=[0])
+# peak_sum_df = pd.read_csv(csv_direc, index_col=[0])  # old code, takes it from imported csv
 peak_sum_df = peaksum_23nm_df
 
-cols =['peak1','peak2','peak3','peak4','peak5','peak6','peak7',
+peak_cols =['peak1','peak2','peak3','peak4','peak5','peak6','peak7',
 'peak8','peak9','peak10','peak11','peak12','peak13','peak14','peak15']
+base_cols = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
 
 # create Data Frame for the fitted parameters
 exp_fit_df = pd.DataFrame(columns = ['scan_id', 'peak_id', 'a', 'tau', 't0', 'c'])
 biexp_fit_df = pd.DataFrame(columns = ['scan_id', 'peak_id', 'a1', 'a2', 'tau1', 'tau2', 't0', 'c'])
 
-peak_choice = 0, 1, 2, 3, 4, 5, 6
+# peak_choice = 0, 1, 2, 3, 4, 5, 6
+peak_choice = 0, 1, 2, 3, 4, 5
 peak_colors = cm.turbo(np.linspace(0, 1, len(peak_choice)))
 
-for scan_index in np.arange(1,4,1):  # loop over scans
+for scan_index in np.arange(1,6,1):  # loop over scans
     print('++++++++ scan_index: ' + str(scan_index))
     fig1, ax1 = plt.subplots()
     # fig1.suptitle('scan_id: ' + str(scan_index))
@@ -50,17 +52,28 @@ for scan_index in np.arange(1,4,1):  # loop over scans
     for peak_index in peak_choice:  # loop over peaks
         print('peak_index: ' + str(peak_index))
         # extract the data I want from the dataframe
-        scandf = peak_sum_df[peak_sum_df['scan_id'] == scan_index] # partition a block of the dataframe to scandf
+        scandf = peaksum_23nm_df[peaksum_23nm_df['scan_id']==scan_index] # partition a block of the dataframe to scandf
+        lr_df = liquidrise_23nm_df[liquidrise_23nm_df['scan_pk']==scan_index]
+
         tp = scandf['timepoint']   # x-data
-        peak = scandf[cols[peak_index]]  # get raw peak intensity
+
+        peak = scandf[peak_cols[peak_index]]  # get raw peak intensity
         peak_norm = peak/np.mean(peak[:7]) # y-data
 
-        pltlabel = 'scan'+str(scan_index)+'-'+cols[peak_index]
-        ax1.plot(tp, peak_norm, '-o', label = cols[peak_index], color = peak_colors[peak_index])
+        base = lr_df[base_cols[peak_index+1]]
+        base_zeroed = base - np.mean(base.iloc[0:5])
+        peak_adjusted = peak - base_zeroed
+        peak_adjusted_norm = peak_adjusted/np.mean(peak_adjusted[:7])
+
+        pltlabel = 'scan'+str(scan_index)+'-'+peak_cols[peak_index]
+
+        ax1.plot(tp, peak_norm, '-o', label = peak_cols[peak_index], color = peak_colors[peak_index])
+
+        ax1.plot(tp, peak_adjusted_norm, marker = '^', linestyle = '--', label = base_cols[peak_index], color = peak_colors[peak_index])
 
 
         #region BI_EXP_FIT
-        # a1, a2, tau1, tau2, t0, c = -0.4, -0.2, 2, 100, 0, 1
+        # a1, a2, tau1, tau2, t0, c = -0.4, -0.2, 2, 100, 0, 1jj
         # x_fit, y_fit, fit_var, pcov = biexp_fit(tp, peak_norm, a1, a2, tau1, tau2, t0, c, pltlabel)
         # biexp_new_row = {'scan_id':scan_index, 'peak_id':(peak_index+1),
         #               'a1':fit_var[0], 'a2':fit_var[1], 'tau1':fit_var[2], 'tau2':fit_var[3],
@@ -141,5 +154,4 @@ if using_sql:
 
         plt.grid(True)
     plt.show()
-
 
