@@ -3,7 +3,6 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import matplotlib.cm as cm
 from scipy.signal import find_peaks
 from scipy.signal import argrelmin
 from scipy import interpolate

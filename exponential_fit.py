@@ -37,7 +37,6 @@ def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, plotlabel):
 
         return (1 / 2) * ((A1 * erf1) + (A1 * exp1) * (-2 + erfc1)) + c
 
-
     popt, pcov = curve_fit(ExponentialIntensityDecay, times, peaks, p0 =(a_fit, tau_fit, t0_fit, c_fit))
 
     x_out = np.arange(min(times),max(times), 0.01)
