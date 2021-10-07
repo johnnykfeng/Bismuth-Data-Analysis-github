@@ -5,9 +5,26 @@ from scipy.special import erfc
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
+def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, plotlabel=''):
+    '''
+    Fitting equation:
+        erf1 = 1 + erf((x - t0) / (np.sqrt(2) * sigma))
+        exp1 = np.exp((sigma ** 2 - 2 * (x - t0) * tau1) / (2 * tau1 ** 2))
+        erfc1 = erfc((-sigma + ((x - t0) * tau1 / sigma)) / (np.sqrt(2) * tau1))
+        return (1 / 2) * ((A1 * erf1) + (A1 * exp1) * (-2 + erfc1)) + c
 
+    :param timedata: timepoint array for x-axis
+    :param peakdata: peak intensity array for y-axis
+    :param a_fit: scaling amplitude [-1,1]
+    :param tau_fit: time constant of decay, [0,100 ps]
+    :param t0_fit: time zero, [-10, 10 ps]
+    :param c_fit: offset variable, usually set to 1
+    :param plotlabel: optional argument, I don't think it's used anymore
+    :return:
+        x_out, y_out: best fit curve
+        popt, pcov: scipy curve_fit output
+    '''
 
-def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, plotlabel):
     times = np.array(timedata)   # convert whatever into array
     peaks = np.array(peakdata)
 

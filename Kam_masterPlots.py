@@ -1084,6 +1084,7 @@ def figure3():
     plt.tight_layout(pad=0.1, w_pad=0.05, h_pad=0.05)
     plt.show()
 
+
 def figure4():
 
     # Set up figure stuff.

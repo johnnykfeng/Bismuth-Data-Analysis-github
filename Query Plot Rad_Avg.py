@@ -73,7 +73,7 @@ for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
             liquid_rise[p_index, j] = sum(radavgflat_plot[bases[p] - sum_range: bases[p]+sum_range])
 
         #region Organize the liquid rise data into dictionary
-        liquid_rise_list[scanindex]= liquid_rise
+        liquid_rise_list[scanindex] = liquid_rise
         row_values = [scankey, tp[j], liquid_rise[0, j], liquid_rise[1, j], liquid_rise[2, j],
                       liquid_rise[3, j], liquid_rise[4, j], liquid_rise[5, j], liquid_rise[6, j]]
 
