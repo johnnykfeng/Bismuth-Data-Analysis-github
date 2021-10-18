@@ -25,7 +25,7 @@ show_diff_img = 0
 show_on_img = 1
 show_off_img = 0
 show_integrated_peaks = 0
-show_centerfinding = 1
+show_centerfinding = 0
 show_flattened_on_img = 1
 show_vertical_lines = 1
 show_expfits = 1
@@ -91,8 +91,6 @@ sumImg = np.zeros((1000, 1148))
 sumOff = np.zeros((1000, 1148))
 sumOn = np.zeros((1000, 1148))
 sumDiff = np.zeros((1000, 1148))
-
-
 
 # script for generating timepoints in correct string format
 # timepoint = np.arange(-1000,4000,500).astype(int)
@@ -300,7 +298,10 @@ time_integers.pop(0)
 if show_expfits:
 
     fitted_variables = np.zeros((len(peak_choices), 5))
+
     fig, ax1 = plt.subplots()
+    fig2, ax2 = plt.subplots()
+
     skipfirst = 0
     skiplast = 1
     x_peaks = np.array(time_integers)  # picks timepoints for the exponential fitting
@@ -311,18 +312,21 @@ if show_expfits:
         a, c, tau, t0 = 8000, -8000, 2.0, 2.0
 
         y_peaks = (peak_sum[p_index, skipfirst:-skiplast])
-        x_fit, y_fit, popt, pcov = exp_fit.mainfitting(x_peaks, y_peaks, a, c, tau, t0, 'Peak ' + str(p))
+        # x_fit, y_fit, popt, pcov = exp_fit.mainfitting(x_peaks, y_peaks, a, c, tau, t0, 'Peak ' + str(p))
+        x_fit, y_fit, popt, pcov = exp_fit.Exp_Fit(x_peaks, y_peaks, a, tau, t0, c, 'Peak ' + str(p))
         fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3]  # stick the fitted variables here to make a table
 
-        normalize_intensity = 1
+        normalize_intensity = True
         if normalize_intensity:
-            y_fit = np.true_divide(y_fit, popt[0] + popt[1])
-            y_peaks = np.true_divide(y_peaks, popt[0] + popt[1])
+            # y_fit = np.true_divide(y_fit, popt[0] + popt[3])
+            y_fit = np.true_divide(y_fit, popt[3])
+            # y_peaks = np.true_divide(y_peakspt[0] + popt[3])
+            y_peaks = np.true_divide(y_peaks, popt[3])
 
         t_zero_correction = True
         if t_zero_correction:
-            x_peaks = x_peaks - popt[3]
-            x_fit = x_fit - popt[3]
+            x_peaks = x_peaks - popt[2]
+            x_fit = x_fit - popt[2]
 
         ax1.plot(x_peaks, y_peaks, '-o', color=peak_colors[p_index], label="Peak #" + str(p))
         ax1.plot(x_fit, y_fit, '--', color=peak_colors[p_index])
@@ -334,14 +338,18 @@ if show_expfits:
         ax1.grid(True)
         ax1.set_title('Single Shot scan, 23 nm Bi layer, 35 mJ/cm^2 ')
 
+
+        ax2.plot(x_peaks, y_peaks, '-o')
+        ax2.grid(True)
+
     output_qtable=1
     if output_qtable:
         qtable = QTable()
         qtable['Peak #'] = np.round(fitted_variables[:,0], 0)
-        qtable['Tau'] = np.round(fitted_variables[:,3] , 2) *u.ps
-        qtable['t0'] = np.round(fitted_variables[:,4] , 2)*u.ps
+        qtable['Tau'] = np.round(fitted_variables[:,2] , 2) *u.ps
+        qtable['t0'] = np.round(fitted_variables[:,3] , 2)*u.ps
         qtable['a'] = np.round(fitted_variables[:, 1], 2)
-        qtable['c'] = np.round(fitted_variables[:, 2], 2)
+        qtable['c'] = np.round(fitted_variables[:, 4], 2)
         print(qtable)
 
 
