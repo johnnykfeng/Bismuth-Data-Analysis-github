@@ -22,7 +22,7 @@ dataDirec = 'D:\\Bismuth Project\\New Bismuth Data\\2021-02-19\\scans\\SingleSho
 print(dataDirec)
 
 show_diff_img = 0
-show_on_img = 1
+show_on_img = 0
 show_off_img = 0
 show_integrated_peaks = 0
 show_centerfinding = 0
@@ -219,6 +219,7 @@ fontP.set_size('small')
 colors = cm.jet(np.linspace(0,1,len(timepoint_str)))  # colormap for plotting
 
 for k in np.arange(1, len(timepoint_str)):
+    #region Setting up radial average arrays
     timepoint = os.path.basename(onList[k]).split('_')[3]
     t_ps = int(timepoint) * 1e-3
     t_list.append(t_ps)  # accumulates the timepoint as ps
@@ -232,6 +233,7 @@ for k in np.arange(1, len(timepoint_str)):
     flattened_rad_avg_on = rad_avg_on[min(bases):max(bases)] - spline_bg
     # flattened_rad_avg_on = flattened_rad_avg_on - min(flattened_rad_avg_on[100:])
     lr_data.append(sum(rad_avg_diff[lr_range[0]:lr_range[1]]))  # integrates pixels for liquid rise analysis
+    #endregion
 
     if show_diff_img:
         plt.figure(20)
@@ -266,52 +268,59 @@ for k in np.arange(1, len(timepoint_str)):
 
         if i % 2 == 1:
             # axs[scan_index].plot(flattened_rad_avg_on , color=colors[i], linewidth=2, linestyle='-', label=str(t_ps) + 'ps ')
-            plt.plot(flattened_rad_avg_on , color=colors[k], linewidth=2, linestyle='-', label=str(time_integers[k]) + 'ps ')
+            plt.plot(flattened_rad_avg_on , color=colors[k], linewidth=2, linestyle='-', label=str(time_integers[k]) + ' ps ')
         else:
             # axs[scan_index].plot(flattened_rad_avg_on , color=colors[i], linewidth=2, linestyle='--', label=str(t_ps) + 'ps ')
-            plt.plot(flattened_rad_avg_on, color=colors[k], linewidth=2, linestyle='--', label=str(time_integers[k]) + 'ps ')
+            plt.plot(flattened_rad_avg_on, color=colors[k], linewidth=2, linestyle='--', label=str(time_integers[k]) + ' ps ')
 
+        show_vertical_lines = 0
         if show_vertical_lines:
             for p in peak_choices:
                 plt.axvline(x=(peakposition[p]-peak_step), linestyle='--')
                 plt.axvline(x=(peakposition[p]+peak_step), linestyle='--')
             # LABEL peaks in the plots
-        for t in range(len(peakposition)):
-            peakposn_text = str(peakposition[t])
-            plt.text(peakposition[t] + 10, flattened_rad_avg[peakposition][t] + 100, str(t),
-                     fontweight='bold')  # labels the peak index number
+        # for t in range(len(peakposition)):
+        #     peakposn_text = str(peakposition[t])
+        #     plt.text(peakposition[t] + 10, flattened_rad_avg[peakposition][t] + 100, str(t),
+        #              fontweight='bold')  # labels the peak index number
 
-        plt.legend(title='timepoints', bbox_to_anchor=(1, 1), loc='upper left', prop=fontP)
-        plt.xlim(100, 400)
-        plt.ylim(-500, 8500)
+        # plt.legend(title='timepoints', bbox_to_anchor=(1, 1), loc='upper left', prop=fontP)
+        plt.legend(title='Time Delays', loc='upper right', prop=fontP)
+        plt.xlim(100, 250)
+        plt.ylim(-250, 1500)
         # plt.title(plot_title)
-        plt.xlabel('Radius from center (pixel)')
-        plt.ylabel('Radial average difference intensity')
-        plt.grid(True)
-        plt.title("Background subtracted")
+        plt.xlabel('Distance from center (pixel)', fontsize=12)
+        plt.ylabel('Intensity (a.u.)', fontsize=12)
+        plt.tick_params(axis='both', labelsize=12)
+        # plt.grid(True)
+        # plt.title("Background subtracted")
 
     for p_index, p in enumerate(peak_choices):
         peak_sum[p_index, k-1] = sum(flattened_rad_avg_on[peakposition[p]-peak_step: peakposition[p]+peak_step])
 
-time_integers.pop(0)
+
 
 if show_expfits:
 
     fitted_variables = np.zeros((len(peak_choices), 5))
 
     fig, ax1 = plt.subplots()
-    fig2, ax2 = plt.subplots()
+    # fig2, ax2 = plt.subplots()
 
     skipfirst = 0
     skiplast = 1
+    time_integers.pop(0)
     x_peaks = np.array(time_integers)  # picks timepoints for the exponential fitting
     # Does the exponential fit for each peak
 
     for p_index, p in enumerate(peak_choices):
         print(p_index, p)
-        a, c, tau, t0 = 8000, -8000, 2.0, 2.0
+        a, tau, t0, c = -5000, 2.0, 0.1, 9000
+        if p_index == 1:
+            a, tau, t0, c  = -1100, 1.0, 0.1, 1600
 
         y_peaks = (peak_sum[p_index, skipfirst:-skiplast])
+        # y_peaks = (peak_sum[p_index, :])  # keep all time points
         # x_fit, y_fit, popt, pcov = exp_fit.mainfitting(x_peaks, y_peaks, a, c, tau, t0, 'Peak ' + str(p))
         x_fit, y_fit, popt, pcov = exp_fit.Exp_Fit(x_peaks, y_peaks, a, tau, t0, c, 'Peak ' + str(p))
         fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3]  # stick the fitted variables here to make a table
@@ -319,28 +328,40 @@ if show_expfits:
         normalize_intensity = True
         if normalize_intensity:
             # y_fit = np.true_divide(y_fit, popt[0] + popt[3])
-            y_fit = np.true_divide(y_fit, popt[3])
+            y_fit_norm = np.true_divide(y_fit, popt[3])
             # y_peaks = np.true_divide(y_peakspt[0] + popt[3])
-            y_peaks = np.true_divide(y_peaks, popt[3])
+            y_peaks_norm = np.true_divide(y_peaks, popt[3])
 
         t_zero_correction = True
         if t_zero_correction:
-            x_peaks = x_peaks - popt[2]
-            x_fit = x_fit - popt[2]
+            x_peaks_zeroed = x_peaks - popt[2]
+            x_fit_zeroed = x_fit - popt[2]
 
-        ax1.plot(x_peaks, y_peaks, '-o', color=peak_colors[p_index], label="Peak #" + str(p))
-        ax1.plot(x_fit, y_fit, '--', color=peak_colors[p_index])
+        marks = '^', 's'
+        peaklabels = '(011) peak trace', '(01-1) peak trace'
+        fit_labels = '(011) exponential fit', '(01-1) exponential fit'
+        ax1.plot(x_peaks_zeroed, y_peaks_norm, linestyle='solid', color=peak_colors[p_index],
+                 label=peaklabels[p_index], linewidth=0.8, marker = marks[p_index], markersize = 7 ,alpha = 0.8)
+
+        ax1.plot(x_fit_zeroed, y_fit_norm, '--', color=peak_colors[p_index], linewidth=2.5, label=fit_labels[p_index])
 
         ax1.tick_params(axis='y')
-        ax1.set_ylabel('Normalized peak intensity')
-        ax1.set_xlabel('Time Delay (ps)')
-        ax1.legend(loc='center left')
-        ax1.grid(True)
-        ax1.set_title('Single Shot scan, 23 nm Bi layer, 35 mJ/cm^2 ')
+        ax1.set_ylabel('Normalized Peak Intensity,  $\Delta I$ / $I_{o}$', labelpad=5, fontsize=12)
+        ax1.set_xlabel('Time Delay (ps)', fontsize=12)
+        ax1.tick_params(axis='both', labelsize=12)
+        ax1.legend(loc='upper right', prop={'size': 13})
+        ax1.grid(linestyle='--', linewidth=0.8)
+        # ax1.set_title('Single Shot scan, 23 nm Bi layer, 35 mJ/cm^2 ')
 
+        savefigure = 0
+        if savefigure:
+            saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure.pdf', format='pdf')
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure.svg', format='svg', dpi=600)
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure.png', format='png', dpi=600)
 
-        ax2.plot(x_peaks, y_peaks, '-o')
-        ax2.grid(True)
+        # ax2.plot(x_peaks, y_peaks, '-o')
+        # ax2.grid(True)
 
     output_qtable=1
     if output_qtable:
