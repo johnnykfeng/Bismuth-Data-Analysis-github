@@ -218,6 +218,9 @@ fontP.set_size('small')
 
 colors = cm.jet(np.linspace(0,1,len(timepoint_str)))  # colormap for plotting
 
+fig_flat = plt.figure('flattened radial average')
+ax_flat = fig_flat.add_subplot(111)
+
 for k in np.arange(1, len(timepoint_str)):
     #region Setting up radial average arrays
     timepoint = os.path.basename(onList[k]).split('_')[3]
@@ -264,7 +267,8 @@ for k in np.arange(1, len(timepoint_str)):
         plt.title("OFF image  - " + dataDirec)
 
     if show_flattened_on_img:
-        plt.figure('flattened radial average')
+
+
 
         if i % 2 == 1:
             # axs[scan_index].plot(flattened_rad_avg_on , color=colors[i], linewidth=2, linestyle='-', label=str(t_ps) + 'ps ')
@@ -286,19 +290,29 @@ for k in np.arange(1, len(timepoint_str)):
 
         # plt.legend(title='timepoints', bbox_to_anchor=(1, 1), loc='upper left', prop=fontP)
         plt.legend(title='Time Delays', loc='upper right', prop=fontP)
-        plt.xlim(100, 250)
-        plt.ylim(-250, 1500)
+        plt.xlim(80, 300)
+        plt.ylim(-100, 1600)
         # plt.title(plot_title)
-        plt.xlabel('Distance from center (pixel)', fontsize=12)
-        plt.ylabel('Intensity (a.u.)', fontsize=12)
-        plt.tick_params(axis='both', labelsize=12)
+        ax_flat.set_xlabel('Distance from center (pixel)', fontsize=12)
+        ax_flat.set_ylabel('Intensity (a.u.)', fontsize=12)
+        ax_flat.axes.xaxis.set_ticks([])
+        ax_flat.axes.yaxis.set_ticks([])
+        # ax.tick_params(axis='both', labelsize=0, length=0)
         # plt.grid(True)
         # plt.title("Background subtracted")
 
     for p_index, p in enumerate(peak_choices):
         peak_sum[p_index, k-1] = sum(flattened_rad_avg_on[peakposition[p]-peak_step: peakposition[p]+peak_step])
 
+savefigure_flatradialaverage = 1
+if savefigure_flatradialaverage:
+    saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
+    fig_flat.savefig(saveDirectory + '\\SingleShot_RadialAverage.pdf', format='pdf')
+    fig_flat.savefig(saveDirectory + '\\SingleShot_RadialAverage.svg', format='svg', dpi=800)
+    fig_flat.savefig(saveDirectory + '\\SingleShot_RadialAverage.png', format='png', dpi=800)
+    fig_flat.savefig(saveDirectory + '\\SingleShot_RadialAverage.eps', format='eps', dpi=800)
 
+plt.show()
 
 if show_expfits:
 
@@ -353,12 +367,13 @@ if show_expfits:
         ax1.grid(linestyle='--', linewidth=0.8)
         # ax1.set_title('Single Shot scan, 23 nm Bi layer, 35 mJ/cm^2 ')
 
-        savefigure = 0
+        savefigure = 1
         if savefigure:
             saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
-            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure.pdf', format='pdf')
-            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure.svg', format='svg', dpi=600)
-            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure.png', format='png', dpi=600)
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure_HD.pdf', format='pdf')
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure_HD.svg', format='svg', dpi=1200)
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure_HD.png', format='png', dpi=1200)
+            plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure_HD.eps', format='eps', dpi=1200)
 
         # ax2.plot(x_peaks, y_peaks, '-o')
         # ax2.grid(True)
