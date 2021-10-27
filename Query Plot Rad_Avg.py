@@ -37,7 +37,8 @@ lr_dict = []
 
 # scan_loop_arange = np.arange(8, 13, 1) # for 14nm scan
 scan_loop_arange = np.arange(1,8,1) # for 23nm scan
-# print(len(scan_loop_arange))
+# scan_loop_arange = np.arange(1,3,1) # for 23nm scan
+print(len(scan_loop_arange))
 liquid_rise_list = [None] * len(scan_loop_arange)
 
 for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans

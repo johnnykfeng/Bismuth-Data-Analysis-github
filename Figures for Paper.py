@@ -88,7 +88,7 @@ def figure1(timepoint_on = 15.0, timepoint_off =-3.0, scankey = 2, savefigure = 
         plt.savefig(saveDirectory + figureName +'.svg', format='svg', dpi = 600)
         plt.savefig(saveDirectory + figureName +'.png', format='png', dpi = 600)
 
-# figure1(timepoint_on = 15.0, timepoint_off =-3.0, scankey=2, savefigure = 0)
+figure1(timepoint_on = 15.0, timepoint_off =-3.0, scankey=2, savefigure = 0)
 
 #------------------------------------------------------------------------------
 
@@ -170,15 +170,22 @@ def figure2(scankey = 2, savefigure = 0):
 
 # def figure3():
 
+
+import Linear_fit
 peaksum_23nm_df = pd.read_sql_table('Peak_sum_23nm_adjusted',
                                     'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 scankey = 2
 peak_cols = ['peak1', 'peak2', 'peak3', 'peak4', 'peak5', 'peak6', 'peak7',
              'peak8', 'peak9', 'peak10', 'peak11', 'peak12', 'peak13', 'peak14', 'peak15']
-
+fluence_label = ['0.78','1.3', '2.6', '5.2', '7.8', '10.4', '15.6']
 fig,ax = plt.subplots()
 
-for scankey in np.arange(1,7):
+scankey_loop = np.arange(1,4)
+print(scankey_loop)
+
+colors_fluence = cm.Set1(np.linspace(0, 1, len(fluence_label)))
+
+for scanindex, scankey in enumerate(scankey_loop):
 
     peak_df = peaksum_23nm_df[peaksum_23nm_df['scan_id'] == scankey]
 
@@ -186,23 +193,33 @@ for scankey in np.arange(1,7):
     peak_colors = cm.turbo(np.linspace(0, 1, len(peak_choice)))
     DBy_list = []
     DBx_list = []
-    peakposns =np.array([130, 188, 219, 262, 301, 347, 387, 408, 477, 541, 565, 604, 634, 669, 723])
+    peakposns =np.array([125, 186, 218, 263, 302, 333, 388, 430, 451, 479])
     peakposn_k = peakposns*pixel2Ghkl
+
 
     for p, peak_index in enumerate(peak_choice):  # loop over peaks
         peak = peak_df.loc[:, peak_cols[peak_index]]
         peak_norm = peak / np.mean(peak[:6])
         DBy = -np.log(np.mean(peak_norm[-5:]))   # average the last 5 peak_norm
-        DBx = (peakposn_k[peak_index])**2
+        DBx = (peakposn_k[peak_index])
         DBx_list.append(DBx)
         DBy_list.append(DBy)
 
-    ax.plot(DBx_list, DBy_list, '-o', label=str(scankey))
+    dbx_fit, dby_fit, popt, pcov = Linear_fit.mainfit(x=DBx_list, y=DBy_list,
+                                                      slope_guess=.4, intercept_guess=0, include_intercept=True)
+    axlabel = fluence_label[scanindex] + ' mJ/cm$^2$'
+    print(axlabel)
+    ax.plot(DBx_list, DBy_list, marker = 'o', linewidth=1, label= axlabel, color = colors_fluence[scanindex])
+    lowerbound = 26
+    ax.plot(dbx_fit[lowerbound:], dby_fit[lowerbound:], linestyle = '--', color = colors_fluence[scanindex])
+
+    ax.set_ylabel('$-ln( I(t)/I_{t0} )$')
+    ax.set_xlabel('$G_{hkl}^2$  ' + ' ($A^{-2}$) ')
+    ax.set_xlim(0.25, 0.75)
+
 plt.grid(True)
 plt.legend()
 plt.show()
-
-
 
 
 
