@@ -168,7 +168,6 @@ def figure2(scankey = 2, savefigure = 0):
 
 # figure2(scankey = 2, savefigure = 0)
 
-
 # def figure3():
 
 peaksum_23nm_df = pd.read_sql_table('Peak_sum_23nm_adjusted',
@@ -177,17 +176,33 @@ scankey = 2
 peak_cols = ['peak1', 'peak2', 'peak3', 'peak4', 'peak5', 'peak6', 'peak7',
              'peak8', 'peak9', 'peak10', 'peak11', 'peak12', 'peak13', 'peak14', 'peak15']
 
-peak_df = peaksum_23nm_df[peaksum_23nm_df['scan_id'] == scankey]
+fig,ax = plt.subplots()
 
-peak_choice = 0, 1, 4, 5
-peak_colors = cm.turbo(np.linspace(0, 1, len(peak_choice)))
-DBy_list = []
+for scankey in np.arange(1,7):
 
-for p, peak_index in enumerate(peak_choice):  # loop over peaks
-    peak = peak_df.loc[:, peak_cols[peak_index]]
-    peak_norm = peak / np.mean(peak[:6])
-    DBy = -np.log(np.mean(peak_norm[-5:]))
-    DBy_list.append(DBy)
+    peak_df = peaksum_23nm_df[peaksum_23nm_df['scan_id'] == scankey]
+
+    peak_choice = 0, 1, 4, 5
+    peak_colors = cm.turbo(np.linspace(0, 1, len(peak_choice)))
+    DBy_list = []
+    DBx_list = []
+    peakposns =np.array([130, 188, 219, 262, 301, 347, 387, 408, 477, 541, 565, 604, 634, 669, 723])
+    peakposn_k = peakposns*pixel2Ghkl
+
+    for p, peak_index in enumerate(peak_choice):  # loop over peaks
+        peak = peak_df.loc[:, peak_cols[peak_index]]
+        peak_norm = peak / np.mean(peak[:6])
+        DBy = -np.log(np.mean(peak_norm[-5:]))   # average the last 5 peak_norm
+        DBx = (peakposn_k[peak_index])**2
+        DBx_list.append(DBx)
+        DBy_list.append(DBy)
+
+    ax.plot(DBx_list, DBy_list, '-o', label=str(scankey))
+plt.grid(True)
+plt.legend()
+plt.show()
+
+
 
 
 
