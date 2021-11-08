@@ -280,38 +280,30 @@ def figure_colorbar_flatradavg():
 
 # figure_colorbar_flatradavg()
 
-def figure_colorbar_off():
+def figure_colorbar_off(savefigure=False):
     bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
     scan_loop_arange = np.arange(7,8,1) # for 23nm scan
     # scan_loop_arange = np.arange(1,3,1) # for 23nm scan
-    print(len(scan_loop_arange))
-    liquid_rise_list = [None] * len(scan_loop_arange)
-    peak_choices = 0, 1, 4, 5
-
+    print(scan_loop_arange)
 
     for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
         fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values
-
         # fig, ax = plt.subplots()
         fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
         plt.figure(fig_str_label)
 
-        # plt.title(fig_str_label)
-        # scandf = bigscan14nm_df[bigscan14nm_df['scan_key'].isin([scankey])] # filters for scankey, partition the df
         scandf = bigscan23nm_df[bigscan23nm_df['scan_key'].isin([scankey])] # filters for scankey, partition the df
         tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
         radavgflat = scandf['radavg_off']    # extract the 'radavg_flattened' column
 
         colors = cm.jet(np.linspace(0, 1, len(tp)))    # colormap for plotting
-
         sm = plt.cm.ScalarMappable(cmap='jet',
                                    norm=plt.Normalize(vmin=np.min(tp), vmax=np.max(tp)))
 
         for j, radavgflat_plot in enumerate(radavgflat): # this loops over every timepoint
 
             radavgflat_plot = np.array(radavgflat_plot)  # radavgflat_plot is an array for one timepoint
-            px = np.arange(0,len(radavgflat_plot))
-            x_plot = px*pixel2Ghkl
+            x_plot = np.arange(0,len(radavgflat_plot))*pixel2Ghkl  # converts the pixels to scattering vector k
             plt.plot(x_plot, radavgflat_plot, color=colors[j], label=str(tp[j]))
 
             if j == 0:  # for the first timepoint, get peakposn and bases
@@ -334,4 +326,12 @@ def figure_colorbar_off():
     plt.tight_layout()
     plt.show()
 
-figure_colorbar_off()
+    if savefigure:
+        saveDirectory = 'D:\\Bismuth Project\\Figures for paper\\'
+        figureName = 'OffRadAvg_colorbar'
+        plt.savefig(saveDirectory + figureName +'.pdf', format='pdf', dpi = 1200)
+        plt.savefig(saveDirectory + figureName +'.svg', format='svg', dpi = 1200)
+        plt.savefig(saveDirectory + figureName +'.png', format='png', dpi = 1200)
+        plt.savefig(saveDirectory + figureName +'.eps', format='eps', dpi = 1200)
+
+figure_colorbar_off(savefigure = True)
