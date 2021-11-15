@@ -336,7 +336,8 @@ if show_expfits:
         y_peaks = (peak_sum[p_index, skipfirst:-skiplast])
         # y_peaks = (peak_sum[p_index, :])  # keep all time points
         # x_fit, y_fit, popt, pcov = exp_fit.mainfitting(x_peaks, y_peaks, a, c, tau, t0, 'Peak ' + str(p))
-        x_fit, y_fit, popt, pcov = exp_fit.Exp_Fit(x_peaks, y_peaks, a, tau, t0, c, 'Peak ' + str(p))
+        x_fit, y_fit, popt, pcov = exp_fit.Exp_Fit(x_peaks, y_peaks, a, tau, t0, c,
+                                                   sigma=0.35, plotlabel='Peak ' + str(p))
         fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3]  # stick the fitted variables here to make a table
 
         normalize_intensity = True
@@ -367,7 +368,7 @@ if show_expfits:
         ax1.grid(linestyle='--', linewidth=0.8)
         # ax1.set_title('Single Shot scan, 23 nm Bi layer, 35 mJ/cm^2 ')
 
-        savefigure = 1
+        savefigure = 0
         if savefigure:
             saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
             plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure_HD.pdf', format='pdf')

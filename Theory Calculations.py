@@ -24,8 +24,6 @@ def excited_carriers_fraction(deltaT, wavelength = 800e-9):
 
 #endregion
 
-
-
 def find_nearest(array, value):
     ''' 
     Simple function that finds the element in an array closest to a value

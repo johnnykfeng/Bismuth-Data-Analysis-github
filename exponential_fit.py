@@ -5,7 +5,7 @@ from scipy.special import erfc
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 
-def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, plotlabel=''):
+def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 0.3, plotlabel=''):
     '''
     Fitting equation:
         erf1 = 1 + erf((x - t0) / (np.sqrt(2) * sigma))
@@ -46,7 +46,7 @@ def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, plotlabel=''):
     #endregion
 
     def ExponentialIntensityDecay(x, A1, tau1, t0, c):
-        sigma = 0.3  # instrument response function ?
+        #sigma = 0.3  # instrument response function ?
 
         erf1 = 1 + erf((x - t0) / (np.sqrt(2) * sigma))
         exp1 = np.exp((sigma ** 2 - 2 * (x - t0) * tau1) / (2 * tau1 ** 2))

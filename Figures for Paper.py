@@ -164,7 +164,7 @@ def figure2(scankey = 2, savefigure = 0):
 
     plt.show()
 
-figure2(scankey = 2, savefigure = 0)
+#figure2(scankey = 2, savefigure = 0)
 
 def figure_DebyeWaller(linearplot = True):
     import Linear_fit
@@ -225,7 +225,6 @@ def figure_DebyeWaller(linearplot = True):
 
 # figure_DebyeWaller(linearplot=False)
 # figure_DebyeWaller(linearplot=True)
-
 
 def figure_colorbar_flatradavg():
     bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
@@ -334,4 +333,55 @@ def figure_colorbar_off(savefigure=False):
         plt.savefig(saveDirectory + figureName +'.png', format='png', dpi = 1200)
         plt.savefig(saveDirectory + figureName +'.eps', format='eps', dpi = 1200)
 
-figure_colorbar_off(savefigure = True)
+#figure_colorbar_off(savefigure = True)
+
+def figure_liquid_rise():
+    liquidrise_df = pd.read_sql_table('liquidrise_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+
+    base_columns = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
+    colors = cm.jet(np.linspace(0, 1, len(base_columns)))  # colormap for plotting
+
+    scan_loop_arange = np.arange(1,6,1)
+    # plotting the Liquid Rise from the data frame
+    for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+        plt.figure('LR scankey: ' + str(scankey))
+
+        for b_index, base_col in enumerate(base_columns):
+            x = liquidrise_df[liquidrise_df['scan_pk'] == scankey]['timepoint']
+            y = liquidrise_df[liquidrise_df['scan_pk'] == scankey][base_col]
+
+            y_norm = y- np.mean(y.iloc[0:5])
+            plt.plot(x, y_norm, label=base_col, color=colors[b_index], marker='o')
+
+        plt.grid(True)
+        plt.legend()
+    plt.show()
+
+def figure_liquid_rise2():
+    liquidrise_df = pd.read_sql_table('liquidrise_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+
+    base_columns = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
+    fluence_labels = ['0.78', '1.3', '2.6', '5.2', '7.8', '10.4', '15.6']
+    # colors = cm.jet(np.linspace(0, 1, len(base_columns)))  # colormap for plotting
+
+    scan_loop_arange = np.arange(1,6,1)
+    colors = cm.jet(np.linspace(0, 1, 7))  # colormap for plotting
+    # plotting the Liquid Rise from the data frame
+    for b_index, base_col in enumerate(base_columns):
+
+        # plt.figure('Scankey: ' + str(scankey) +' Fluence: '+fluence_labels[scanindex])
+        plt.figure(base_columns[b_index])
+
+        for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+            x = liquidrise_df[liquidrise_df['scan_pk'] == scankey]['timepoint']
+            y = liquidrise_df[liquidrise_df['scan_pk'] == scankey][base_col]
+
+            y_norm = y- np.mean(y.iloc[0:5])
+            plt.plot(x, y_norm, color=colors[scanindex],
+                     marker='o', label =fluence_labels[scanindex])
+
+        plt.grid(True)
+        plt.legend()
+    plt.show()
+
+figure_liquid_rise2()
