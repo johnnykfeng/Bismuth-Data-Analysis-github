@@ -279,6 +279,63 @@ def figure_colorbar_flatradavg():
 
 # figure_colorbar_flatradavg()
 
+def figure_animate():
+    from matplotlib import animation
+    import time
+
+    bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+
+    scan_loop_arange = np.arange(3,4,1) # for 23nm scan
+    print(scan_loop_arange)
+
+'''
+This chunk of code is recycled from many other figure plots
+I only need to plot one scankey, so this scankey loop is superfluous, 
+but I'm just going to keep it here just in case I need to plot multiple scans
+'''
+    for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+        fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values  # extract fluence value
+        fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
+        # plt.figure(fig_str_label)
+
+        scandf = bigscan23nm_df[bigscan23nm_df['scan_key'] == scankey] # filters for scankey, partition the df
+        tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
+        radavgflat = scandf['radavg_flattened']    # extract the 'radavg_flattened' column
+
+        colors = cm.jet(np.linspace(0, 1, len(tp)))    # colormap for plotting
+        sm = plt.cm.ScalarMappable(cmap='jet',
+                                   norm=plt.Normalize(vmin=np.min(tp), vmax=np.max(tp)))
+
+        def init_figure():
+            fig = plt.figure(fig_str_label)
+            plt.xlim(0.23, 0.9)
+            plt.yticks([])  # empty y-ticks for arbituary units
+            plt.ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
+            plt.xlabel(r'k ($\AA^{-1}$)', fontsize=12)
+            plt.grid(True)
+            line.set_data([], [])
+            return line,
+
+        for j, radavgflat_plot in enumerate(radavgflat):
+            '''This loops over every timepoint per scankey'''
+            radavgflat_plot = np.array(radavgflat_plot)  # radavgflat_plot is an array for one timepoint
+            x_plot = np.arange(0,len(radavgflat_plot))*pixel2Ghkl  # converts the pixels to scattering vector k
+            plt.plot(x_plot, radavgflat_plot, color=colors[j], label=str(tp[j]))
+
+        cbar = plt.colorbar(sm)
+        cbar.set_label('Time Delay (ps)')
+
+        plt.xlim(0.23, 0.9)
+        plt.yticks([])  # empty y-ticks for arbituary units
+        plt.ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
+        plt.xlabel(r'k ($\AA^{-1}$)', fontsize=12)
+        # plt.legend()
+        # plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+figure_animate()
+
 def figure_colorbar_off(savefigure=False):
     bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
     scan_loop_arange = np.arange(7,8,1) # for 23nm scan
@@ -384,4 +441,11 @@ def figure_liquid_rise2():
         plt.legend()
     plt.show()
 
-figure_liquid_rise2()
+# figure_liquid_rise2()
+
+def fit_variables_calc():
+    fit_var = pd.read_sql_table('exp_fit_variables_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+    # fit_var.info()
+
+# fit_variables_calc()
+
