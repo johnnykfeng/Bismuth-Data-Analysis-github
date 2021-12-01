@@ -279,62 +279,63 @@ def figure_colorbar_flatradavg():
 
 # figure_colorbar_flatradavg()
 
-def figure_animate():
-    from matplotlib import animation
-    import time
+# def figure_animate():
+from matplotlib import animation
+import time
+bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 
-    bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
+scan_loop_arange = np.arange(3,4,1) # for 23nm scan
+print(scan_loop_arange)
 
-    scan_loop_arange = np.arange(3,4,1) # for 23nm scan
-    print(scan_loop_arange)
+for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+    fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values  # extract fluence value
+    fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
+    # fig = plt.figure(fig_str_label)
 
-'''
-This chunk of code is recycled from many other figure plots
-I only need to plot one scankey, so this scankey loop is superfluous, 
-but I'm just going to keep it here just in case I need to plot multiple scans
-'''
-    for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
-        fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values  # extract fluence value
-        fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
-        # plt.figure(fig_str_label)
+    # fig = plt.figure(figsize=(8,6))
+    # ax = fig.add_subplot()
 
-        scandf = bigscan23nm_df[bigscan23nm_df['scan_key'] == scankey] # filters for scankey, partition the df
-        tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
-        radavgflat = scandf['radavg_flattened']    # extract the 'radavg_flattened' column
+    scandf = bigscan23nm_df[bigscan23nm_df['scan_key'] == scankey] # filters for scankey, partition the df
+    tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
+    radavgflat = scandf['radavg_flattened']    # extract the 'radavg_flattened' column
+    # print(radavgflat.loc[80])
+    print(tp)
 
-        colors = cm.jet(np.linspace(0, 1, len(tp)))    # colormap for plotting
-        sm = plt.cm.ScalarMappable(cmap='jet',
-                                   norm=plt.Normalize(vmin=np.min(tp), vmax=np.max(tp)))
+    colors = cm.jet(np.linspace(0, 1, len(tp)))    # colormap for plotting
+    sm = plt.cm.ScalarMappable(cmap='jet',
+                               norm=plt.Normalize(vmin=np.min(tp), vmax=np.max(tp)))
 
-        def init_figure():
-            fig = plt.figure(fig_str_label)
-            plt.xlim(0.23, 0.9)
-            plt.yticks([])  # empty y-ticks for arbituary units
-            plt.ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
-            plt.xlabel(r'k ($\AA^{-1}$)', fontsize=12)
-            plt.grid(True)
-            line.set_data([], [])
-            return line,
+    fig = plt.figure(figsize=(8,6))
+    ax = fig.add_subplot()
+    ax.set_xlim(0.23, 0.75)
+    ax.set_ylim(0, 1.0e4)
+    # ax.set_yticks([])  # empty y-ticks for arbituary units
+    # ax.set_ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
+    # ax.set_xlabel(r'k ($\AA^{-1}$)', fontsize=12)
+    ax.grid(True)
 
-        for j, radavgflat_plot in enumerate(radavgflat):
-            '''This loops over every timepoint per scankey'''
-            radavgflat_plot = np.array(radavgflat_plot)  # radavgflat_plot is an array for one timepoint
-            x_plot = np.arange(0,len(radavgflat_plot))*pixel2Ghkl  # converts the pixels to scattering vector k
-            plt.plot(x_plot, radavgflat_plot, color=colors[j], label=str(tp[j]))
+    # time_template = 'time = %d'
+    time_template = 'time delay = %.1f ps'
+    time_text = ax.text(0.5, 0.9, '', transform=ax.transAxes)
 
-        cbar = plt.colorbar(sm)
-        cbar.set_label('Time Delay (ps)')
+    line, = ax.plot([],[], '-')
 
-        plt.xlim(0.23, 0.9)
-        plt.yticks([])  # empty y-ticks for arbituary units
-        plt.ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
-        plt.xlabel(r'k ($\AA^{-1}$)', fontsize=12)
-        # plt.legend()
-        # plt.grid(True)
-    plt.tight_layout()
-    plt.show()
+    def animate_scan(i):
+        print(f'{i}, {tp[i]}' )
+        radavgflat_plot = np.array(radavgflat.loc[80+i])
+        x_plot = np.arange(0,len(radavgflat_plot))*pixel2Ghkl
 
-figure_animate()
+        # line.set_data = (x_plot, radavgflat_plot)
+        # line = ax.plot(x_plot, radavgflat_plot, color=colors[i], label=str(tp[i]))
+        line.set_data(x_plot, radavgflat_plot)
+        time_text.set_text(time_template % tp[i])
+        return line, time_text
+
+
+anim = animation.FuncAnimation(fig, animate_scan, frames = len(tp), interval=250, blit=1)
+plt.show()
+
+# figure_animate()
 
 def figure_colorbar_off(savefigure=False):
     bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
