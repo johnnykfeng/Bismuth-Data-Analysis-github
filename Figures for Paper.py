@@ -173,7 +173,7 @@ def figure_DebyeWaller(linearplot = True):
     peak_cols = ['peak1', 'peak2', 'peak3', 'peak4', 'peak5', 'peak6', 'peak7',
                  'peak8', 'peak9', 'peak10', 'peak11', 'peak12', 'peak13', 'peak14', 'peak15']
     fluence_label = ['0.78','1.3', '2.6', '5.2', '7.8', '10.4', '15.6']
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize = (7.5,5.5))
 
     if linearplot:
         scankey_loop = np.arange(1,4)
@@ -198,7 +198,6 @@ def figure_DebyeWaller(linearplot = True):
             DBx_list.append(DBx)
             DBy_list.append(DBy)
 
-
         axlabel = fluence_label[scanindex] + ' mJ/cm$^2$'
         print(axlabel)
         ax.plot(DBx_list, DBy_list, marker = 'o',markersize = 6, linewidth=1, label= axlabel, color = colors_fluence[scanindex])
@@ -217,11 +216,13 @@ def figure_DebyeWaller(linearplot = True):
         ax.set_ylabel('-ln($I(t)/I_{t0}$)', labelpad=5, fontsize=12)
         ax.set_xlabel('k$^2$' + ' ($A^{-2}$) ', fontsize=12)
         ax.tick_params(axis='both', labelsize=12)
-        ax.legend(loc='upper left', prop={'size': 10}, frameon=False)
+        ax.legend(loc='upper left', prop={'size': 10}, frameon=True)
 
     plt.tight_layout()
     # plt.grid(True)
     plt.show()
+
+figure_DebyeWaller(linearplot = True)
 
 # figure_DebyeWaller(linearplot=False)
 # figure_DebyeWaller(linearplot=True)
@@ -280,62 +281,64 @@ def figure_colorbar_flatradavg():
 # figure_colorbar_flatradavg()
 
 # def figure_animate():
-from matplotlib import animation
-import time
-bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 
-scan_loop_arange = np.arange(3,4,1) # for 23nm scan
-print(scan_loop_arange)
+def animation():
+    from matplotlib import animation
+    import time
+    bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 
-for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
-    fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values  # extract fluence value
-    fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
-    # fig = plt.figure(fig_str_label)
+    scan_loop_arange = np.arange(3,4,1) # for 23nm scan
+    print(scan_loop_arange)
 
-    # fig = plt.figure(figsize=(8,6))
-    # ax = fig.add_subplot()
+    for scanindex, scankey in enumerate(scan_loop_arange):  # loop over scans
+        fluence = scandict_df[scandict_df['scan_id'] == scankey]['fluence'].values  # extract fluence value
+        fig_str_label = 'scankey: ' + str(scankey) + ', fluence: ' +str(fluence)
+        # fig = plt.figure(fig_str_label)
 
-    scandf = bigscan23nm_df[bigscan23nm_df['scan_key'] == scankey] # filters for scankey, partition the df
-    tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
-    radavgflat = scandf['radavg_flattened']    # extract the 'radavg_flattened' column
-    # print(radavgflat.loc[80])
-    print(tp)
+        # fig = plt.figure(figsize=(8,6))
+        # ax = fig.add_subplot()
 
-    colors = cm.jet(np.linspace(0, 1, len(tp)))    # colormap for plotting
-    sm = plt.cm.ScalarMappable(cmap='jet',
-                               norm=plt.Normalize(vmin=np.min(tp), vmax=np.max(tp)))
+        scandf = bigscan23nm_df[bigscan23nm_df['scan_key'] == scankey] # filters for scankey, partition the df
+        tp = np.array(scandf['timepoint'])     # extract the 'timepoint' column
+        radavgflat = scandf['radavg_flattened']    # extract the 'radavg_flattened' column
+        # print(radavgflat.loc[80])
+        print(tp)
 
-    fig = plt.figure(figsize=(8,6))
-    ax = fig.add_subplot()
-    ax.set_xlim(0.23, 0.75)
-    ax.set_ylim(0, 1.0e4)
-    # ax.set_yticks([])  # empty y-ticks for arbituary units
-    # ax.set_ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
-    # ax.set_xlabel(r'k ($\AA^{-1}$)', fontsize=12)
-    ax.grid(True)
+        colors = cm.jet(np.linspace(0, 1, len(tp)))    # colormap for plotting
+        sm = plt.cm.ScalarMappable(cmap='jet',
+                                   norm=plt.Normalize(vmin=np.min(tp), vmax=np.max(tp)))
 
-    # time_template = 'time = %d'
-    time_template = 'time delay = %.1f ps'
-    time_text = ax.text(0.5, 0.9, '', transform=ax.transAxes)
+        fig = plt.figure(figsize=(8,6))
+        ax = fig.add_subplot()
+        ax.set_xlim(0.23, 0.75)
+        ax.set_ylim(0, 1.0e4)
+        # ax.set_yticks([])  # empty y-ticks for arbituary units
+        # ax.set_ylabel('Intensity (a.u.)', labelpad=5, fontsize=12)
+        # ax.set_xlabel(r'k ($\AA^{-1}$)', fontsize=12)
+        ax.grid(True)
 
-    line, = ax.plot([],[], '-')
+        # time_template = 'time = %d'
+        time_template = 'time delay = %.1f ps'
+        time_text = ax.text(0.5, 0.9, '', transform=ax.transAxes)
 
-    def animate_scan(i):
-        print(f'{i}, {tp[i]}' )
-        radavgflat_plot = np.array(radavgflat.loc[80+i])
-        x_plot = np.arange(0,len(radavgflat_plot))*pixel2Ghkl
+        line, = ax.plot([],[], '-')
 
-        # line.set_data = (x_plot, radavgflat_plot)
-        # line = ax.plot(x_plot, radavgflat_plot, color=colors[i], label=str(tp[i]))
-        line.set_data(x_plot, radavgflat_plot)
-        time_text.set_text(time_template % tp[i])
-        return line, time_text
+        def animate_scan(i):
+            print(f'{i}, {tp[i]}' )
+            radavgflat_plot = np.array(radavgflat.loc[80+i])
+            x_plot = np.arange(0,len(radavgflat_plot))*pixel2Ghkl
+
+            # line.set_data = (x_plot, radavgflat_plot)
+            # line = ax.plot(x_plot, radavgflat_plot, color=colors[i], label=str(tp[i]))
+            line.set_data(x_plot, radavgflat_plot)
+            time_text.set_text(time_template % tp[i])
+            return line, time_text
 
 
-anim = animation.FuncAnimation(fig, animate_scan, frames = len(tp), interval=250, blit=1)
-plt.show()
+    anim = animation.FuncAnimation(fig, animate_scan, frames = len(tp), interval=250, blit=1)
+    plt.show()
 
-# figure_animate()
+    # figure_animate()
 
 def figure_colorbar_off(savefigure=False):
     bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')

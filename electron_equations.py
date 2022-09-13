@@ -8,15 +8,19 @@ kinetic energy, total energy and wavelength of an accelerated electron
 They should be all correct, I double checked ;)
 """
 
-from pylab import *
+#from pylab import *
+
+import numpy as np
+
+sqrt=np.sqrt
 
 e= 1.60217657e-19
 m= 9.10938291e-31
 c=2.99792458e8
 h=6.62606957e-34
 sigma2fwhm = 2.355
-fwhm2sigma =1/2.355
-keV = 1e3; um=1e-6;
+fwhm2sigma = 1/2.355
+keV = 1e3; um = 1e-6;
 
 # keep in mind, kinetic energy KE=qV, where q is the charge of particle
 # and V is acceleration voltage
@@ -92,7 +96,14 @@ def radius2dhkl(radius, detector_distance, wavelength):
     return 2.0*wavelength*radius/detector_distance
 
 
+ke = 30e3
 
+gamma_value = KE2gamma(ke)
+beta_value = KE2beta(ke)
+wavelength = KE2wavelength(ke)
+print(gamma_value)
+print(beta_value)
+print(wavelength)
 
 
 

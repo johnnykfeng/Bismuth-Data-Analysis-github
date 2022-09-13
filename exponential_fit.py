@@ -4,8 +4,9 @@ from scipy.special import erf
 from scipy.special import erfc
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
-def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 0.3, plotlabel=''):
+def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 1.0, plotlabel=''):
     '''
     Fitting equation:
         erf1 = 1 + erf((x - t0) / (np.sqrt(2) * sigma))
@@ -28,22 +29,6 @@ def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 0.3, plot
     times = np.array(timedata)   # convert whatever into array
     peaks = np.array(peakdata)
 
-    #region OLD CODE
-    # def piecewise_exp_function(t, a, c, tau, t0):
-    #     if t < t0:
-    #         return a + c
-    #     else:
-    #         return a*np.exp(-1.0*(t - t0)/tau) + c
-    #
-    # fitfunc_vec = np.vectorize(piecewise_exp_function)
-    # def fitfunc_vec_self(t,a,c,tau,t0):
-    #     y = np.zeros(t.shape)
-    #     for i in range(len(y)):
-    #         y[i]=piecewise_exp_function(t[i],a,c,tau,t0)
-    #     return y
-
-    # popt, pcov = curve_fit(fitfunc_vec_self, times, peaks, p0 =(a_fit,c_fit,tau_fit,t0_fit))
-    #endregion
 
     def ExponentialIntensityDecay(x, A1, tau1, t0, c):
         #sigma = 0.3  # instrument response function ?
@@ -65,36 +50,62 @@ def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 0.3, plot
 if __name__ == '__main__':
 
     import pandas as pd
+
+    # loading the data
     csv_direc = 'D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\peak_sum_sql_export.csv'
     peak_sum_df = pd.read_csv(csv_direc, index_col=[0])
 
-    peak_choice = 0, 1, 2, 3
+    # initializing the variables for the loop
+    # peak_choice = 0, 1, 2, 3, 4, 5
+    peak_choice = 0, 1, 4, 5
     peak_colors = cm.turbo(np.linspace(0, 1, len(peak_choice)))
+    cols = ['peak1', 'peak2', 'peak3', 'peak4', 'peak5', 'peak6']
+    exp_fit_df = pd.DataFrame(columns = ['scan_id', 'peak_id', 'a', 'tau', 't0', 'c', 'a_err', 'tau_err', 't0_err', 'c_err'])
 
-    for scan_index in np.arange(1, 4, 1):  # loop over scans
+
+    for scan_index in np.arange(1, 7, 1):  # loop over scans
         print('scan_index: ' + str(scan_index))
         fig1, ax1 = plt.subplots()
 
-        for peak_index in peak_choice:  # loop over peaks
-            print('peak_index: ' + str(peak_index))
+        for p, peak_index in enumerate(peak_choice):  # loop over peaks
+            print(f'peak_index: {str(peak_index)}')
             # extract the data I want from the dataframe
             scandf = peak_sum_df.loc[[scan_index]]
             tp = scandf['timepoint']
             peak = scandf[cols[peak_index]]
             peak_norm = peak / np.mean(peak[:7])
 
-
-            ax1.plot(tp, peak_norm, '-o', label=cols[peak_index], color=peak_colors[peak_index])
+            ax1.plot(tp, peak_norm, '-o', label=cols[peak_index], color=peak_colors[p])
 
             a, tau, t0, c = -0.2, 2.0, 0, 1
 
-            pltlabel = 'scan' + str(scan_index) + '-' + cols[peak_index]
-            x_fit, y_fit, fit_var, pcov = Exp_Fit(tp, peak_norm, a, tau, t0, c, pltlabel)
+            pltlabel = f'scan{str(scan_index)}-{cols[peak_index]}'
+            x_fit, y_fit, fit_var, pcov = Exp_Fit(tp, peak_norm, a, tau, t0, c)
+            perr = np.sqrt(np.diag(pcov))  # calculates sqrt of the diagonals of pcov
 
-            ax1.plot(x_fit, y_fit, '--', color=peak_colors[peak_index])
+            expfit_new_row = {'scan_id': str(scan_index), 'peak_id': str(peak_index + 1),
+                              'a': fit_var[0], 'tau': fit_var[1], 't0': fit_var[2], 'c': fit_var[3],
+                              'a_err':perr[0], 'tau_err':perr[1], 't0_err':perr[2], 'c_err':perr[3]}
 
-        fig1.suptitle('scan_id: ' + str(scan_index))
+            exp_fit_df = exp_fit_df.append(expfit_new_row, ignore_index=True)
+
+
+            ax1.plot(x_fit, y_fit, '--', color=peak_colors[p])
+
+        fig1.suptitle('scan_id: {0}'.format(str(scan_index)))
         plt.legend()
         plt.grid(True)
 
-    plt.show()
+    peak2bragg_map = {'1':'(011)', '2':'(01-1)', '5':'(002)', '6':'(022)'}
+    exp_fit_df['bragg_peak'] = exp_fit_df.peak_id.map(peak2bragg_map)
+    scan2fluence_map = {'1':'0.78', '2':'1.3', '3':'2.6', '4':'5.2', '5':'7.8', '6':'10.4'}
+    exp_fit_df['fluence'] = exp_fit_df.scan_id.map(scan2fluence_map)
+
+    fit_var_sliced = exp_fit_df[['fluence', 'peak_id', 'bragg_peak', 'tau', 'tau_err', 't0', 't0_err']]
+    print(exp_fit_df)
+    print(fit_var_sliced)
+
+    # fit_var_sliced.to_csv('D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\Time_constants_w_err.csv', index=False)
+
+    # plt.show()
+

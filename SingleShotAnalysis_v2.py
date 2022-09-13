@@ -10,6 +10,7 @@ import matplotlib.cm as cm
 import findCenters
 from matplotlib.font_manager import FontProperties
 import exponential_fit as exp_fit
+import pandas as pd
 from astropy.table import QTable, Table, Column
 from astropy import units as u
 
@@ -94,7 +95,7 @@ sumDiff = np.zeros((1000, 1148))
 
 # script for generating timepoints in correct string format
 # timepoint = np.arange(-1000,4000,500).astype(int)
-timepoint = np.array([-5000,-2000,-1000,0,500,1000,1500,2000,2500,3000,3500,4000,5000,6000,8000])
+timepoint = np.array([-5000,-2000, -1000, 0, 500,1000,1500,2000,2500,3000,3500,4000,5000,6000,8000])
 extra=np.array([15000])
 # extra = np.array([5000, 6000, 8000, 10000, 12000, 15000, 20000, 50000, 100000, 500000])
 timepointfinal = np.sort(np.concatenate((timepoint,extra)))
@@ -125,7 +126,7 @@ for n, time in enumerate(timepoint_str):
         sumOff = sumOff + offImg # accumulates the OFF images
         sumDiff = sumOn - sumOff # calculates the DIFF images
 
-    perform_averaging=0   # just divides the summed images by Nshots, not necessary
+    perform_averaging = False   # just divides the summed images by Nshots, not necessary
     if perform_averaging:
         sumOn = sumOn/Nshots
         sumOff = sumOff/Nshots
@@ -327,6 +328,9 @@ if show_expfits:
     x_peaks = np.array(time_integers)  # picks timepoints for the exponential fitting
     # Does the exponential fit for each peak
 
+    exp_fit_df = pd.DataFrame(
+        columns=['peak_id', 'a', 'tau', 't0', 'c', 'a_err', 'tau_err', 't0_err', 'c_err'])
+
     for p_index, p in enumerate(peak_choices):
         print(p_index, p)
         a, tau, t0, c = -5000, 2.0, 0.1, 9000
@@ -338,7 +342,17 @@ if show_expfits:
         # x_fit, y_fit, popt, pcov = exp_fit.mainfitting(x_peaks, y_peaks, a, c, tau, t0, 'Peak ' + str(p))
         x_fit, y_fit, popt, pcov = exp_fit.Exp_Fit(x_peaks, y_peaks, a, tau, t0, c,
                                                    sigma=0.35, plotlabel='Peak ' + str(p))
+        perr = np.sqrt(np.diag(pcov))  # calculates sqrt of the diagonals of pcov
+
+        expfit_new_row = {'peak_id': str(p),
+                          'a': popt[0], 'tau': popt[1], 't0': popt[2], 'c': popt[3],
+                          'a_err': perr[0], 'tau_err': perr[1], 't0_err': perr[2], 'c_err': perr[3]}
+
+        exp_fit_df = exp_fit_df.append(expfit_new_row, ignore_index=True)
+
         fitted_variables[p_index, :] = p, popt[0], popt[1], popt[2], popt[3]  # stick the fitted variables here to make a table
+
+
 
         normalize_intensity = True
         if normalize_intensity:
@@ -347,18 +361,18 @@ if show_expfits:
             # y_peaks = np.true_divide(y_peakspt[0] + popt[3])
             y_peaks_norm = np.true_divide(y_peaks, popt[3])
 
-        t_zero_correction = True
+        t_zero_correction = False
         if t_zero_correction:
-            x_peaks_zeroed = x_peaks - popt[2]
-            x_fit_zeroed = x_fit - popt[2]
+            x_peaks = x_peaks - popt[2]
+            x_fit = x_fit - popt[2]
 
         marks = '^', 's'
         peaklabels = '(011) peak trace', '(01-1) peak trace'
         fit_labels = '(011) exponential fit', '(01-1) exponential fit'
-        ax1.plot(x_peaks_zeroed, y_peaks_norm, linestyle='solid', color=peak_colors[p_index],
+        ax1.plot(x_peaks, y_peaks_norm, linestyle='solid', color=peak_colors[p_index],
                  label=peaklabels[p_index], linewidth=0.8, marker = marks[p_index], markersize = 7 ,alpha = 0.8)
 
-        ax1.plot(x_fit_zeroed, y_fit_norm, '--', color=peak_colors[p_index], linewidth=2.5, label=fit_labels[p_index])
+        ax1.plot(x_fit, y_fit_norm, '--', color=peak_colors[p_index], linewidth=2.5, label=fit_labels[p_index])
 
         ax1.tick_params(axis='y')
         ax1.set_ylabel('Normalized Peak Intensity,  $\Delta I$ / $I_{o}$', labelpad=5, fontsize=12)
@@ -368,7 +382,7 @@ if show_expfits:
         ax1.grid(linestyle='--', linewidth=0.8)
         # ax1.set_title('Single Shot scan, 23 nm Bi layer, 35 mJ/cm^2 ')
 
-        savefigure = 0
+        savefigure = False
         if savefigure:
             saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
             plt.savefig(saveDirectory + '\\SingleShot_PeakTraceFigure_HD.pdf', format='pdf')
@@ -389,7 +403,8 @@ if show_expfits:
         qtable['c'] = np.round(fitted_variables[:, 4], 2)
         print(qtable)
 
-
+    print(exp_fit_df)
+    exp_fit_df.to_csv('D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\Single_shot_time_constants_w_err.csv')
 # if show_integrated_peaks:
 #     plt.figure()
 #     plt.plot(time_integers, peak1_data, '-o', color='r', label="Peak 1")
