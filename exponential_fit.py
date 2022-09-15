@@ -29,7 +29,6 @@ def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 1.0, plot
     times = np.array(timedata)   # convert whatever into array
     peaks = np.array(peakdata)
 
-
     def ExponentialIntensityDecay(x, A1, tau1, t0, c):
         #sigma = 0.3  # instrument response function ?
 
@@ -37,14 +36,14 @@ def Exp_Fit(timedata, peakdata, a_fit, tau_fit, t0_fit, c_fit, sigma = 1.0, plot
         exp1 = np.exp((sigma ** 2 - 2 * (x - t0) * tau1) / (2 * tau1 ** 2))
         erfc1 = erfc((-sigma + ((x - t0) * tau1 / sigma)) / (np.sqrt(2) * tau1))
 
-        return (1 / 2) * ((A1 * erf1) + (A1 * exp1) * (-2 + erfc1)) + c
+        return (1 / 2) * ((A1 * erf1) + (A1 * exp1) * (-2 + erfc1)) + c  # output of ExponentialIntensityDecay
 
     popt, pcov = curve_fit(ExponentialIntensityDecay, times, peaks, p0 =(a_fit, tau_fit, t0_fit, c_fit))
 
     x_out = np.arange(min(times), max(times), 0.01)
     y_out = ExponentialIntensityDecay(x_out, popt[0],popt[1],popt[2],popt[3])
 
-    return x_out, y_out, popt, pcov
+    return x_out, y_out, popt, pcov  # output of Exp_Fit
 
 #testing the shape of the curve_fit function
 if __name__ == '__main__':
@@ -101,11 +100,11 @@ if __name__ == '__main__':
     scan2fluence_map = {'1':'0.78', '2':'1.3', '3':'2.6', '4':'5.2', '5':'7.8', '6':'10.4'}
     exp_fit_df['fluence'] = exp_fit_df.scan_id.map(scan2fluence_map)
 
-    fit_var_sliced = exp_fit_df[['fluence', 'peak_id', 'bragg_peak', 'tau', 'tau_err', 't0', 't0_err']]
+    fit_var_sliced = exp_fit_df[['fluence', 'peak_id', 'bragg_peak', 'a', 'a_err', 'c', 'c_err', 'tau', 'tau_err', 't0', 't0_err']]
     print(exp_fit_df)
     print(fit_var_sliced)
 
-    # fit_var_sliced.to_csv('D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\Time_constants_w_err.csv', index=False)
+    # fit_var_sliced.to_csv('D:\\Bismuth Project\\Bismuth-Data-Analysis-github\\All_fit_constants_w_err.csv', index=False)
 
     # plt.show()
 
