@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import seaborn as sns
 from scipy.signal import find_peaks
 from scipy.signal import argrelmin
 from scipy import interpolate
@@ -30,6 +31,101 @@ connection = engine.connect()
 scandict_df = pd.read_sql_table('scandictionary', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 #endregion
 
+def figure_fluence_scan(savefigure=False):
+
+    fitvar_df = pd.read_csv('All_fit_constants_w_err.csv')
+    print(fitvar_df.tail())
+    print(fitvar_df.info())
+
+    df = pd.read_csv('Normalized_peaks.csv')
+    df.drop(df[df.scan_id == 7].index, inplace=True)
+    print(df.tail())
+    print(df.info())
+
+    fluence_dict = {1:'0.78', 2:'1.3', 3:'2.6', 4:'5.2', 5:'7.8', 6:'10.4'}
+    df['fluence'] = df['scan_id'].map(fluence_dict)
+    print(df.tail())
+    print(df.info())
+
+    scan_colors = cm.plasma(np.linspace(0, 1, 8))
+    print('scan_colors: ')
+    print(scan_colors)
+
+    from exponential_fit import Exp_Fit
+
+    fig, ax = plt.subplots()
+
+    for i, fluence in enumerate(df['fluence'].unique()):
+        print('fluence: ', fluence)
+
+        fitvar_scan = fitvar_df[(fitvar_df['fluence']==np.float64(fluence)) & (fitvar_df['peak_id']==6) ]
+        print(fitvar_scan)
+        df_scan = df[df['fluence'] == fluence]
+        tp = df_scan['timepoint']
+        peak_norm = df_scan['peak6_norm']
+
+        # extracting fit variables
+        a, tau, t0, c = fitvar_scan['a'].values, fitvar_scan['tau'].values, fitvar_scan['t0'].values, fitvar_scan['c'].values
+        print(a, tau, t0, c)
+        x_fit, y_fit, fit_var, pcov = Exp_Fit(tp, peak_norm, a, tau, t0, c)
+        ax.plot(x_fit - fit_var[2], y_fit, '--', color=scan_colors[i])
+        ax.plot(tp - fit_var[2], peak_norm, '-o', linewidth=0.5, color=scan_colors[i], label = str(fluence) )
+
+    ax.set_ylabel('Normalized Intensity of (022) peak,  $\Delta I$ / $I_{o}$', labelpad=5, fontsize=12)
+    ax.set_xlabel('Time Delay (ps)', fontsize=12)
+    ax.tick_params(axis='both', labelsize=12)
+    ax.legend(loc='lower left', prop={'size': 12}, frameon = True, title= 'Fluence ($mJ/cm^2$)')
+    ax.grid(linestyle='--', linewidth = 0.8)
+    plt.tight_layout()
+
+    if savefigure:
+        print('Saving figure.')
+        saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
+        plt.savefig(saveDirectory + '\\FluenceScanPeak6.pdf', format='pdf')
+        plt.savefig(saveDirectory + '\\FluenceScanPeak6.svg', format='svg', dpi = 600)
+        plt.savefig(saveDirectory + '\\FluenceScanPeak6.png', format='png', dpi = 600)
+
+    plt.show()
+
+figure_fluence_scan(savefigure=True)
+
+def TimeZeroAccuracy(savefigure=False):
+
+    fluence = [0.78, 1.3, 2.6, 5.2, 7.8, 10.4]
+    peak1_T0err = [0.230, 0.159, 0.169, 0.100, 0.097, 0.114]
+    peak2_T0err = [0.435, 0.399, 0.403, 0.191, 0.167, 0.224]
+    peak5_T0err = [0.923, 0.733, 0.594, 0.218, 0.258, 0.280]
+    peak6_T0err = [0.166, 0.154, 0.127, 0.059, 0.056, 0.063]
+
+    avg_T0err = [0.439, 0.361, 0.323, 0.142, 0.144, 0.170]
+
+    fig, ax = plt.subplots()
+    ax.plot(fluence, peak1_T0err, '--o', alpha=0.5, label='(01-1) peak')
+    ax.plot(fluence, peak2_T0err, '--o', alpha=0.5, label='(002) peak')
+    ax.plot(fluence, peak5_T0err, '--o', alpha=0.5, label='(011) peak')
+    ax.plot(fluence, peak6_T0err, '--o', alpha=0.5, label='(022) peak')
+    # ax.plot(fluence[1:], avg_T0err[1:], '--o')
+    ax.plot(fluence, avg_T0err, '-o', label='Average all peaks', ms=10, linewidth=5)
+
+    ax.set_ylabel('$T_0$ accuracy (ps)', labelpad=5, fontsize=12)
+    ax.set_xlabel('Fluence ($mJ/cm^2$)', fontsize=12)
+    ax.tick_params(axis='both', labelsize=12)
+    ax.legend(loc='upper right', prop={'size': 12}, frameon=True)
+    # ax.grid(linestyle='--', linewidth=0.8)
+    plt.tight_layout()
+
+
+    if savefigure:
+        print('Saving figure.')
+        saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
+        plt.savefig(saveDirectory + '\\TimeZeroAccuracy.pdf', format='pdf')
+        plt.savefig(saveDirectory + '\\TimeZeroAccuracy.svg', format='svg', dpi=600)
+        plt.savefig(saveDirectory + '\\TimeZeroAccuracy.png', format='png', dpi=600)
+    plt.show()
+
+# TimeZeroAccuracy(savefigure=True)
+
+
 def figure1(timepoint_on = 15.0, timepoint_off =-3.0, scankey = 2, savefigure = 0):
     bigscan23nm_df = pd.read_sql_table('Big_Scan_23nm', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 
@@ -52,8 +148,6 @@ def figure1(timepoint_on = 15.0, timepoint_off =-3.0, scankey = 2, savefigure = 
     fluence = scandict_df.loc[scankey-1, 'fluence']
     print(fluence)
     fig_str_label = 'scankey: ' + str(scankey) + ', fluence= ' +str(fluence) +' mJ/cm2'
-
-    # axis_Ghkl = axis_pixels
 
     ax.plot(axis_Ghkl, radavgflat_off, alpha = 0.8, color = 'blue', linestyle = 'dotted',
             label = 'T = '+str(timepoint_off)+ ' ps')  # first timepoint
@@ -222,7 +316,7 @@ def figure_DebyeWaller(linearplot = True):
     # plt.grid(True)
     plt.show()
 
-figure_DebyeWaller(linearplot = True)
+# figure_DebyeWaller(linearplot = True)
 
 # figure_DebyeWaller(linearplot=False)
 # figure_DebyeWaller(linearplot=True)
