@@ -31,6 +31,56 @@ connection = engine.connect()
 scandict_df = pd.read_sql_table('scandictionary', 'postgresql://postgres:sodapop1@localhost:7981/Bismuth_Project')
 #endregion
 
+
+def meltingtime_fluence(savefigure = False):
+    df = pd.read_csv('Time constant vs Fluence.csv')
+    sample_col = ['Bi on mesh','Bi on mesh','Bi on mesh', 'Bi on SiN','Bi on SiN','Bi on SiN',]
+    df['sample'] = sample_col
+    print(df.info())
+
+    fig, ax = plt.subplots()
+
+    # x_mesh, y_mesh are first 3 rows of the DataFrame
+    x_mesh, y_mesh, err_mesh = df['Fluence'][:3], df['Melting Time'][:3], df['error'][:3]
+    # creating best fit line with np.polyfit and np.poly1d
+    z = np.polyfit(x_mesh, y_mesh, deg=1)
+    print(f'slope = {np.round(z[0],2)}, y-int = {np.round(z[1],2)}')
+    p = np.poly1d(z)
+
+    ax.errorbar(x_mesh, y_mesh, yerr=err_mesh, capsize=2, lw=0,
+                elinewidth=1, ecolor='b', marker='o', color='b', ms=8, label='Bi on mesh')
+    ax.plot(x_mesh, p(x_mesh), '--', color='b')
+
+    # x_SiN, y_SiN are last 3 rows of the DataFrame
+    x_SiN, y_SiN, err_SiN = df['Fluence'][3:], df['Melting Time'][3:], df['error'][3:]
+    # creating best fit line with np.polyfit and np.poly1d
+    z = np.polyfit(x_SiN, y_SiN, deg=1)
+    print(f'slope = {np.round(z[0],2)}, y-int = {np.round(z[1],2)}')
+    p = np.poly1d(z)
+    ax.errorbar(x_SiN, y_SiN, yerr=df['error'][3:], capsize=2, lw=0,
+                elinewidth=1, ecolor='r', marker='^', color='r', ms=8, label='Bi on SiN')
+    ax.plot(x_SiN, p(x_SiN), '--', color='r')
+
+    ax.set_ylabel('Melting Time (fs)', labelpad=5, fontsize=12)
+    ax.set_xlabel('Fluence ($mJ/cm^2$)', fontsize=12)
+    ax.set_ylim(0, 1400)
+    ax.set_xlim(0, 170)
+    ax.tick_params(axis='both', labelsize=12)
+    ax.grid(True, alpha = 0.6)
+    ax.legend(loc='upper right', prop={'size': 12}, frameon = True)
+    plt.tight_layout()
+
+    if savefigure:
+        print('Saving figure...')
+        saveDirectory = 'D:\\Bismuth Project\\Figures for paper'
+        plt.savefig(saveDirectory + '\\MeltingtimeVsFluence.pdf', format='pdf')
+        plt.savefig(saveDirectory + '\\MeltingtimeVsFluence.svg', format='svg', dpi = 400)
+        plt.savefig(saveDirectory + '\\MeltingtimeVsFluence.png', format='png', dpi = 400)
+
+    plt.show()
+meltingtime_fluence(savefigure = True)
+
+
 def figure_fluence_scan(savefigure=False):
 
     fitvar_df = pd.read_csv('All_fit_constants_w_err.csv')
@@ -87,7 +137,7 @@ def figure_fluence_scan(savefigure=False):
 
     plt.show()
 
-figure_fluence_scan(savefigure=True)
+# figure_fluence_scan(savefigure=True)
 
 def TimeZeroAccuracy(savefigure=False):
 
