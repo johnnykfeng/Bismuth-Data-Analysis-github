@@ -78,7 +78,7 @@ def meltingtime_fluence(savefigure = False):
         plt.savefig(saveDirectory + '\\MeltingtimeVsFluence.png', format='png', dpi = 400)
 
     plt.show()
-meltingtime_fluence(savefigure = True)
+# meltingtime_fluence(savefigure = False)
 
 
 def figure_fluence_scan(savefigure=False):
@@ -121,7 +121,7 @@ def figure_fluence_scan(savefigure=False):
         ax.plot(x_fit - fit_var[2], y_fit, '--', color=scan_colors[i])
         ax.plot(tp - fit_var[2], peak_norm, '-o', linewidth=0.5, color=scan_colors[i], label = str(fluence) )
 
-    ax.set_ylabel('Normalized Intensity of (022) peak,  $\Delta I$ / $I_{o}$', labelpad=5, fontsize=12)
+    ax.set_ylabel('Normalized Intensity of (013) peak,  $\Delta I$ / $I_{o}$', labelpad=5, fontsize=12)
     ax.set_xlabel('Time Delay (ps)', fontsize=12)
     ax.tick_params(axis='both', labelsize=12)
     ax.legend(loc='lower left', prop={'size': 12}, frameon = True, title= 'Fluence ($mJ/cm^2$)')
@@ -137,7 +137,7 @@ def figure_fluence_scan(savefigure=False):
 
     plt.show()
 
-# figure_fluence_scan(savefigure=True)
+figure_fluence_scan(savefigure=True)
 
 def TimeZeroAccuracy(savefigure=False):
 
@@ -150,10 +150,10 @@ def TimeZeroAccuracy(savefigure=False):
     avg_T0err = [0.439, 0.361, 0.323, 0.142, 0.144, 0.170]
 
     fig, ax = plt.subplots()
-    ax.plot(fluence, peak1_T0err, '--o', alpha=0.5, label='(01-1) peak')
-    ax.plot(fluence, peak2_T0err, '--o', alpha=0.5, label='(002) peak')
-    ax.plot(fluence, peak5_T0err, '--o', alpha=0.5, label='(011) peak')
-    ax.plot(fluence, peak6_T0err, '--o', alpha=0.5, label='(022) peak')
+    ax.plot(fluence, peak1_T0err, '--o', alpha=0.5, label='(011) peak')
+    ax.plot(fluence, peak2_T0err, '--o', alpha=0.5, label='(01-1) peak')
+    ax.plot(fluence, peak5_T0err, '--o', alpha=0.5, label='(0-12) peak')
+    ax.plot(fluence, peak6_T0err, '--o', alpha=0.5, label='(013) peak')
     # ax.plot(fluence[1:], avg_T0err[1:], '--o')
     ax.plot(fluence, avg_T0err, '-o', label='Average all peaks', ms=10, linewidth=5)
 
@@ -173,7 +173,7 @@ def TimeZeroAccuracy(savefigure=False):
         plt.savefig(saveDirectory + '\\TimeZeroAccuracy.png', format='png', dpi=600)
     plt.show()
 
-# TimeZeroAccuracy(savefigure=True)
+# TimeZeroAccuracy(savefigure=False)
 
 
 def figure1(timepoint_on = 15.0, timepoint_off =-3.0, scankey = 2, savefigure = 0):
@@ -308,7 +308,8 @@ def figure2(scankey = 2, savefigure = 0):
 
     plt.show()
 
-#figure2(scankey = 2, savefigure = 0)
+# figure2(scankey = 2, savefigure = 0)
+
 
 def figure_DebyeWaller(linearplot = True):
     import Linear_fit
